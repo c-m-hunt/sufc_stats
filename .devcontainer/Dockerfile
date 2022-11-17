@@ -10,4 +10,6 @@ RUN if [ "${NODE_VERSION}" != "none" ]; then su vscode -c "umask 0002 && . /usr/
 
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
-RUN poetry install
+# WORKDIR /workspace/sufc_stats
+
+# RUN poetry install

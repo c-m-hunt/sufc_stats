@@ -17,7 +17,6 @@ def set_auth(client_id: str, client_secret: str):
     CLIENT_SECRET = client_secret
 
 
-@cache_request
 def get_request(url: str, params: Dict[str, str]) -> any:
     url = BASE_URL + url
     auth_bytes = f"{CLIENT_ID}:{CLIENT_SECRET}".encode('ascii')
