@@ -1,5 +1,6 @@
 from typing import Dict, List, Any, Optional
-from wyscout.api import get_request
+from wyscout.api.api import get_request
+from wyscout.api.mongo_cache import cache_request
 
 
 def get_key_pass_events(match: Dict[str, Any], events: List[Dict[str, Any]], team_id: Optional[str]) -> List[Dict[str, Any]]:
@@ -14,6 +15,7 @@ def get_key_pass_events(match: Dict[str, Any], events: List[Dict[str, Any]], tea
     }
 
 
+@cache_request("videos", expires_hr=10000)
 def get_video_for_event(event: Any, padding: int = 5, length: int = 5, quality="hd") -> str:
     url = f"videos/{event['matchId']}"
     params = {
