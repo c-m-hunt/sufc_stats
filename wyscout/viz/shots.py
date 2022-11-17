@@ -9,13 +9,14 @@ def plot_shots_compare(
     first_x_games: int = None,
     include_pens: bool = False,
     colors: list = ["red", "blue"],
+    style: str = "fivethirtyeight",
 ):
     pitch = VerticalPitch(pitch_type="wyscout", half=True, goal_type='box',
                           pad_bottom=-20, pitch_color='grass', line_color='white', stripe=True)
     fig, axs = pitch.grid(figheight=15, ncols=2,
                           title_height=0.1, title_space=0.02, axis=False,)
 
-    plt.style.use('ggplot')
+    plt.style.use(style)
 
     robotto_regular = FontManager()
 
