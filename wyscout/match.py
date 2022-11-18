@@ -2,6 +2,13 @@ from wyscout.api.api import get_request
 from wyscout.api.mongo_cache import cache_request
 
 
+@cache_request("competitionMatches", expires_hr=72)
+def get_competition_matches(competition_id: int) -> any:
+    url = f"competitions/{competition_id}/matches"
+    params = {"fetch": "competition"}
+    return get_request(url, params)
+
+
 @cache_request("teamMatches", expires_hr=24)
 def get_team_matches(team_id: int, season_id: int) -> any:
     url = f"teams/{team_id}/matches"
