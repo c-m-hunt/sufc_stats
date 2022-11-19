@@ -15,8 +15,12 @@ def get_cache(collection: str, cache_key: str) -> any:
     rec = db[collection].find_one({
         "key": cache_key
     })
-    if rec is not None and rec["expires"] > datetime.datetime.utcnow():
-        return rec["data"]
+    if rec is not None:
+        if rec["expires"] > datetime.datetime.utcnow():
+            db[collection].delete_one({"_id": rec["_id"]})
+            return None
+        else:
+            return rec["data"]
     return None
 
 
