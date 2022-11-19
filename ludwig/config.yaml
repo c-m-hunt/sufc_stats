@@ -2,7 +2,7 @@ training:
   batch_size: 8
   epochs: 1000
   early_stop: 50
-  learning_rate: 0.001
+  learning_rate: 0.0001
   optimizer:
     type: rmsprop
 input_features:
@@ -230,16 +230,13 @@ input_features:
       type: number
     - name: successfulLateralPasses
       type: number
-    - name: cost
-      type: number
+    - name: position
+      type: category
+    # - name: cost
+    #   type: number
     - name: points
       type: number
-    - name: cost
-      type: number
-    - name: points
-      type: number
-    - name: points
-      type: number
+
 output_features:
   - name: cost
     type: number
