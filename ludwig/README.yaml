@@ -1,0 +1,13 @@
+```
+ludwig experiment --dataset player_data.csv   --config config.yaml
+
+ludwig hyperopt --dataset player_data.csv   --config config.yaml
+
+ludwig train --dataset player_data.csv   --config config.yaml
+
+
+ludwig predict --dataset predict.csv  --model_path=results/experiment_run/model
+
+ludwig predict --dataset player_data.csv  --model_path=results/experiment_run/model
+
+```
