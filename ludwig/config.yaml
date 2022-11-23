@@ -1,0 +1,249 @@
+training:
+  batch_size: 8
+  epochs: 1000
+  early_stop: 50
+  learning_rate: 0.001
+  optimizer:
+    type: rmsprop
+input_features:
+    - name: matches
+      type: number
+    - name: matchesInStart
+      type: number
+    - name: matchesSubstituted
+      type: number
+    - name: matchesComingOff
+      type: number
+    - name: minutesOnField
+      type: number
+    - name: minutesTagged
+      type: number
+    - name: goals
+      type: number
+    - name: assists
+      type: number
+    - name: shots
+      type: number
+    - name: headShots
+      type: number
+    - name: yellowCards
+      type: number
+    - name: redCards
+      type: number
+    - name: directRedCards
+      type: number
+    - name: penalties
+      type: number
+    - name: linkupPlays
+      type: number
+    - name: duels
+      type: number
+    - name: duelsWon
+      type: number
+    - name: defensiveDuels
+      type: number
+    - name: defensiveDuelsWon
+      type: number
+    - name: offensiveDuels
+      type: number
+    - name: offensiveDuelsWon
+      type: number
+    - name: aerialDuels
+      type: number
+    - name: aerialDuelsWon
+      type: number
+    - name: fouls
+      type: number
+    - name: passes
+      type: number
+    - name: successfulPasses
+      type: number
+    - name: smartPasses
+      type: number
+    - name: successfulSmartPasses
+      type: number
+    - name: passesToFinalThird
+      type: number
+    - name: successfulPassesToFinalThird
+      type: number
+    - name: crosses
+      type: number
+    - name: successfulCrosses
+      type: number
+    - name: forwardPasses
+      type: number
+    - name: successfulForwardPasses
+      type: number
+    - name: backPasses
+      type: number
+    - name: successfulBackPasses
+      type: number
+    - name: throughPasses
+      type: number
+    - name: successfulThroughPasses
+      type: number
+    - name: keyPasses
+      type: number
+    - name: successfulKeyPasses
+      type: number
+    - name: verticalPasses
+      type: number
+    - name: successfulVerticalPasses
+      type: number
+    - name: longPasses
+      type: number
+    - name: successfulLongPasses
+      type: number
+    - name: dribbles
+      type: number
+    - name: successfulDribbles
+      type: number
+    - name: interceptions
+      type: number
+    - name: defensiveActions
+      type: number
+    - name: successfulDefensiveAction
+      type: number
+    - name: attackingActions
+      type: number
+    - name: successfulAttackingActions
+      type: number
+    - name: freeKicks
+      type: number
+    - name: freeKicksOnTarget
+      type: number
+    - name: directFreeKicks
+      type: number
+    - name: directFreeKicksOnTarget
+      type: number
+    - name: corners
+      type: number
+    - name: successfulPenalties
+      type: number
+    - name: successfulLinkupPlays
+      type: number
+    - name: accelerations
+      type: number
+    - name: pressingDuels
+      type: number
+    - name: pressingDuelsWon
+      type: number
+    - name: looseBallDuels
+      type: number
+    - name: looseBallDuelsWon
+      type: number
+    - name: missedBalls
+      type: number
+    - name: shotAssists
+      type: number
+    - name: shotOnTargetAssists
+      type: number
+    - name: recoveries
+      type: number
+    - name: opponentHalfRecoveries
+      type: number
+    - name: dangerousOpponentHalfRecoveries
+      type: number
+    - name: losses
+      type: number
+    - name: ownHalfLosses
+      type: number
+    - name: dangerousOwnHalfLosses
+      type: number
+    - name: xgShot
+      type: number
+    - name: xgAssist
+      type: number
+    - name: xgSave
+      type: number
+    - name: receivedPass
+      type: number
+    - name: touchInBox
+      type: number
+    - name: progressiveRun
+      type: number
+    - name: offsides
+      type: number
+    - name: clearances
+      type: number
+    - name: secondAssists
+      type: number
+    - name: thirdAssists
+      type: number
+    - name: shotsBlocked
+      type: number
+    - name: foulsSuffered
+      type: number
+    - name: progressivePasses
+      type: number
+    - name: counterpressingRecoveries
+      type: number
+    - name: slidingTackles
+      type: number
+    - name: goalKicks
+      type: number
+    - name: dribblesAgainst
+      type: number
+    - name: dribblesAgainstWon
+      type: number
+    - name: goalKicksShort
+      type: number
+    - name: goalKicksLong
+      type: number
+    - name: shotsOnTarget
+      type: number
+    - name: successfulProgressivePasses
+      type: number
+    - name: successfulSlidingTackles
+      type: number
+    - name: successfulGoalKicks
+      type: number
+    - name: fieldAerialDuels
+      type: number
+    - name: fieldAerialDuelsWon
+      type: number
+    - name: gkCleanSheets
+      type: number
+    - name: gkConcededGoals
+      type: number
+    - name: gkShotsAgainst
+      type: number
+    - name: gkExits
+      type: number
+    - name: gkSuccessfulExits
+      type: number
+    - name: gkAerialDuels
+      type: number
+    - name: gkAerialDuelsWon
+      type: number
+    - name: gkSaves
+      type: number
+    - name: newDuelsWon
+      type: number
+    - name: newDefensiveDuelsWon
+      type: number
+    - name: newOffensiveDuelsWon
+      type: number
+    - name: newSuccessfulDribbles
+      type: number
+    - name: lateralPasses
+      type: number
+    - name: successfulLateralPasses
+      type: number
+    - name: cost
+      type: number
+    - name: points
+      type: number
+    - name: cost
+      type: number
+    - name: points
+      type: number
+    - name: points
+      type: number
+output_features:
+  - name: cost
+    type: number
+    optimizer:
+      type: mean_squared_error
+    num_fc_layers: 2
+    output_size: 64
