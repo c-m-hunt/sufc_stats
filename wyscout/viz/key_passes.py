@@ -1,12 +1,14 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple, Union
 import matplotlib.pyplot as plt
-from mplsoccer import VerticalPitch, FontManager
+from mplsoccer import VerticalPitch, FontManager, Pitch
+from dataclasses import dataclass
+from wyscout.viz.utils import pass_event_to_arrow, Arrow
 
 
 def plot_key_passes(
     matches: List[Dict[str, Any]],
     last_x_games: int = 5,
-    highlight_players: List[str] = []
+    highlight_players: List[int] = []
 ) -> None:
     pitch = VerticalPitch(pitch_type="wyscout", half=True, goal_type='box',
                           pad_bottom=-20, pitch_color='grass', line_color='white', stripe=True)
@@ -25,17 +27,20 @@ def plot_key_passes(
     axs['title'].text(0.5, 0.5, f'Key Passess - Last {last_x_games} games', va='center',
                       ha='center', color='black', fontproperties=robotto_regular.prop, fontsize=25)
 
+    arrows = []
     for j, match in enumerate(matches[:last_x_games]):
         for i, event in enumerate(match["events"]):
-            color = "red" if event["player"]["name"] in highlight_players else "blue"
-            width = 2
-            if ("possession" in event and
-                "attack" in event["possession"] and
-                event["possession"]["attack"] and
-                    event["possession"]["attack"]["withGoal"]):
-                width = 4
-            pitch.arrows(event["location"]["x"], event["location"]["y"], event["pass"]["endLocation"]["x"], event["pass"]["endLocation"]["y"],
-                         color=color, width=width, ax=axs['pitch']
-                         )
+
+            arrows.append(pass_event_to_arrow(event, highlight_players))
+
+    plot_arrows(arrows, pitch, axs["pitch"])
+    plt.show()
+
+
+def plot_arrows(arrows: List[Arrow], pitch: Union[Pitch, VerticalPitch], ax: plt.Axes) -> None:
+    for arrow in arrows:
+        pitch.arrows(arrow.start[0], arrow.start[1], arrow.end[0], arrow.end[1],
+                     color=arrow.color, width=arrow.width, ax=ax, alpha=0.5
+                     )
 
     plt.show()

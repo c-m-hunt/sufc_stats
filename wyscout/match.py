@@ -11,7 +11,6 @@ def get_competition_matches(competition_id: int) -> any:
 
 @cache_request("teamMatches", expires_hr=24)
 def get_team_matches(team_id: int, season_id: int) -> any:
-    print("HERE")
     url = f"teams/{team_id}/matches"
     params = {"seasonId": str(season_id), "fetch": "team"}
     return get_request(url, params)
