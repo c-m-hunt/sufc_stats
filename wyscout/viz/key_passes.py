@@ -2,7 +2,7 @@ from typing import List, Dict, Any, Tuple, Union
 import matplotlib.pyplot as plt
 from mplsoccer import VerticalPitch, FontManager, Pitch
 from dataclasses import dataclass
-from wyscout.viz.utils import pass_event_to_arrow, Arrow
+from wyscout.viz.arrow import pass_event_to_arrow, Arrow
 
 
 def plot_key_passes(
@@ -39,8 +39,8 @@ def plot_key_passes(
 
 def plot_arrows(arrows: List[Arrow], pitch: Union[Pitch, VerticalPitch], ax: plt.Axes) -> None:
     for arrow in arrows:
+        if arrow.end == (0, 0):
+            arrow.end = arrow.start
         pitch.arrows(arrow.start[0], arrow.start[1], arrow.end[0], arrow.end[1],
-                     color=arrow.color, width=arrow.width, ax=ax, alpha=0.5
+                     color=arrow.color, width=arrow.width, ax=ax, alpha=1, zorder=100
                      )
-
-    plt.show()

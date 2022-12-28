@@ -23,6 +23,7 @@ def get_events_with_match(match: Dict[str, Any], events: List[Dict[str, Any]], t
         if (not team_id or event["team"]["id"] == team_id):
             events_out.append(event)
     return {
+        "matchId": match["matchId"],
         "matchDate": match["date"],
         "opposition": events[0]["opponentTeam"]["name"],
         "events": events_out

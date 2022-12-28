@@ -63,12 +63,13 @@ def plot_shots_compare(
 
 
 def plot_match_chances(
-    match: Any,
+    match: any,
     team_id: int,
     include_pens: bool = False,
     colors: List[str] = None,
     style: str = "fivethirtyeight"
 ):
+
     if not colors:
         colors = ["red", "blue"]
 

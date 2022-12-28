@@ -7,7 +7,7 @@ def get_team_squad(team_id: int, season_id: int) -> any:
     url = f"teams/{team_id}/squad"
     params = {
         "seasonId": season_id,
-        "fetch": "teams"
+        "fetch": "team"
     }
     return get_request(url, params)
 
@@ -21,3 +21,9 @@ def get_player_stats(player_id: int, season_id: int, competition_id: int, round_
         "roundId": round_id,
     }
     return get_request(url, params)
+
+
+@cache_request("teamDetail", expires_hr=240)
+def get_team_details(team_id: int):
+    url = f"teams/{team_id}"
+    return get_request(url, {})

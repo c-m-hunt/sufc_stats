@@ -31,8 +31,20 @@ def get_touches_for_player(player_id: int, team_id: int, season_id: int):
                 "events"] if t["player"]["id"] == player_id]
             if len(touches) > 0:
                 events_out.append({
+                    "matchId": m["matchId"],
                     "matchDate": m["date"],
                     "opposition": touches[0]["opponentTeam"]["name"],
                     "events": touches
                 })
+    return events_out
+
+
+def get_match_events_for_season(team_id: int, season_id: int):
+    matches = get_team_matches(team_id, season_id)
+    events_out = []
+    for m in matches["matches"]:
+        events = get_match_events(m["matchId"])
+        if "events" in events:
+            events_out.append(get_events_with_match(
+                m, events["events"], team_id))
     return events_out
