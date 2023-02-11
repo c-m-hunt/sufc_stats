@@ -92,30 +92,34 @@ def plot_match_chances(
     if include_pens:
         event_types.append("penalty")
 
-    def plot_shots(events, team_id, oppo, color, ax):
-        if oppo:
-            shots = [e for e in events if e["type"]
-                     ["primary"] in event_types and team_id != e["team"]["id"]]
-        else:
-            shots = [e for e in events if e["type"]
-                     ["primary"] in event_types and team_id == e["team"]["id"]]
+    shots = [e for e in match["events"] if e["type"]
+             ["primary"] in event_types and team_id != e["team"]["id"]]
 
-        for shot in shots:
-            size = shot["shot"]["xg"] * 1000
-            edge_color = "red" if shot["shot"]["isGoal"] is True else "black"
-            pitch.scatter(
-                shot["location"]["x"],
-                shot["location"]["y"],
-                s=size,
-                label=shot["player"]["name"],
-                color=color,
-                edgecolors=[edge_color],
-                linewidth=1.5,
-                marker='o',
-                ax=ax
-            )
-
-    plot_shots(match["events"], team_id, False, colors[0], axs["pitch"])
-    plot_shots(match["events"], team_id, True, colors[1], axs["pitch"])
+    plot_shots(shots, colors[0], pitch, axs["pitch"])
 
     plt.show()
+
+
+def plot_shots(shots, color, pitch, ax, reverse=False):
+
+    if type(color) is not tuple:
+        color = (color, color)
+
+    for shot in shots:
+        if reverse:
+            shot["location"]["x"] = 100 - shot["location"]["x"]
+            shot["location"]["y"] = 100 - shot["location"]["y"]
+
+        size = shot["shot"]["xg"] * 1000
+        edge_color = "red" if shot["shot"]["isGoal"] is True else "black"
+        pitch.scatter(
+            shot["location"]["x"],
+            shot["location"]["y"],
+            s=size,
+            label=shot["player"]["name"],
+            color=color[0] if shot["shot"]["onTarget"] is True else color[1],
+            edgecolors=[edge_color],
+            linewidth=1.5,
+            marker='o',
+            ax=ax
+        )

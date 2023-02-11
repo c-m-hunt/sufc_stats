@@ -2,6 +2,8 @@ from collections import defaultdict
 from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
+from urllib.request import urlopen
+from mplsoccer import add_image
 
 from wyscout.stats import get_match_events_for_season
 from wyscout.viz.arrow import is_first_half, pass_event_to_arrow, ArrowOptions
@@ -9,36 +11,18 @@ from wyscout.viz.consts import COLOUR_1, COLOUR_2, COLOUR_3
 from wyscout.viz.heat_map import plot_player_action_map, plot_pass_map
 from wyscout.viz.key_passes import plot_key_passes
 from wyscout.team import get_team_squad, get_team_details
-from wyscout.match import get_match_details
 from wyscout.viz.shots import plot_shots_compare, plot_match_chances
-
-from wyscout.viz.data import get_shots, get_key_passes
-
-
-def get_match_details_and_events(
-    team_id: int,
-    match_id: int
-):
-    match_details = get_match_details(match_id)
-    season_id = match_details["seasonId"]
-    matches = get_match_events_for_season(team_id, season_id)
-    squad = get_team_squad(team_id, season_id)
-    squad = {p["wyId"]: p for p in squad["squad"]}
-    filtered_matches = [m for m in matches if m["matchId"] == match_id]
-    if len(filtered_matches) == 0:
-        print("No touches for player in match")
-        return
-
-    match = filtered_matches[0]
-
-    return match, match_details, squad
+from wyscout.viz.consts import SPONSOR_LOGO, SPONSOR_TEXT, COLOUR_1, COLOUR_2, APP_FONT
+from PIL import Image
+from wyscout.viz.utils import format_match_details
+from wyscout.viz.data import get_match_details_and_events, get_shots, get_key_passes
 
 
 def pass_heat_map_for_match(
     team_id: int,
     match_id: int
 ):
-    match, match_details, squad = get_match_details_and_events(
+    match, match_details, squad, team_details = get_match_details_and_events(
         team_id, match_id)
 
     passes = [e for e in match["events"] if e["type"]
@@ -77,6 +61,7 @@ def pass_heat_map_for_match(
 
     ax.set_yticks(np.arange(len(from_players)), labels=from_players)
     ax.set_xticks(np.arange(len(to_players)), labels=to_players)
+    ax.grid(False)
 
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
              rotation_mode="anchor")
@@ -102,7 +87,7 @@ def player_heat_map_for_match(
     period=None,
     subtitle="",
 ):
-    match, match_details, squad = get_match_details_and_events(
+    match, match_details, squad, team_details = get_match_details_and_events(
         team_id, match_id)
 
     touches = []
@@ -192,33 +177,14 @@ def player_pass_map_for_season(
     )
 
 
-def format_match_details(match_detail, team_id) -> str:
-    format_in = "%B %d, %Y at %H:%M:%S %p"
-    match_date = datetime.strptime(
-        match_detail["date"].split(" GMT")[0], format_in)
-    format_out = "%d %b, %Y"
-    match_date_formatted = match_date.strftime(format_out)
-
-    venue = ""
-    opposition = ""
-    for t in match_detail["teamsData"].values():
-        if t["teamId"] == team_id:
-            venue = t["side"][0]
-        else:
-            opposition_detail = get_team_details(t["teamId"])
-            opposition = opposition_detail["name"]
-
-    return f'{opposition} ({venue}) {match_date_formatted}'
-
-
 def key_pass_map(season_id: int, player_id: int, team_id: int):
     kp = get_key_passes(team_id, season_id)
     plot_key_passes(kp, 10, [player_id])
 
 
-def shot_compare_map(team_id: int, season_id: int):
+def shot_compare_map(team_id: int, season_id: int, compare_last_n: int = 1):
     match_events = get_shots(team_id, season_id)
-    plot_shots_compare(match_events, 1)
+    plot_shots_compare(match_events, compare_last_n)
 
 
 def shot_map(team_id: int, season_id: int):

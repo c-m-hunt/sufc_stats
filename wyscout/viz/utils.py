@@ -1,0 +1,104 @@
+from typing import List
+
+from collections import defaultdict
+from datetime import datetime
+from matplotlib.figure import Figure
+import numpy as np
+import matplotlib.pyplot as plt
+from urllib.request import urlopen
+from mplsoccer import add_image
+
+from wyscout.viz.arrow import is_first_half, pass_event_to_arrow, ArrowOptions
+from wyscout.team import get_team_details
+from wyscout.viz.consts import SPONSOR_LOGO, SPONSOR_TEXT, COLOUR_1, COLOUR_2, APP_FONT
+from PIL import Image
+
+
+def add_footer(fig, ax, font_size=10, scale_img=1.5):
+    ax.text(1, 0.5, SPONSOR_TEXT, color='#000009',
+            va='bottom', ha='right', fontproperties=APP_FONT.prop, fontsize=font_size)
+
+    logo = Image.open(urlopen(SPONSOR_LOGO))
+    add_image(logo, fig, interpolation='hanning',
+              # set the left, bottom and height to align with the title
+              left=ax.get_position().x0,
+              bottom=ax.get_position().y0,
+              height=ax.get_position().height * scale_img)
+
+
+def add_header(
+    fig: Figure,
+    ax: plt.Axes,
+    title: str,
+    subtitle: List[str] = None,
+    imgs: List[Image.Image] = None,
+    font_size=20,
+    subtitle_font_size=10,
+    subtitle_start_pos=0.4,
+    scale_img=1.3,
+    img_rel_x_pos=0.15,
+    img_rel_y_pos=0,
+    title_pos=(0, 0.9),
+    title_ha='left',
+    title_va='center',
+
+):
+    if title:
+        ax.text(title_pos[0], title_pos[1], title, color='#000009',
+                va=title_va, ha=title_ha, fontproperties=APP_FONT.prop, fontsize=font_size)
+
+    if subtitle:
+        height = 0.4
+        for s in subtitle:
+            ax.text(0, subtitle_start_pos, s, color='#000009',
+                    va=title_va, ha=title_ha, fontproperties=APP_FONT.prop, fontsize=subtitle_font_size)
+            height -= 0.25
+
+    if imgs:
+        rel_start_pos = img_rel_x_pos
+        move_img = 0.2
+        for img in imgs:
+            add_image(img, fig, interpolation='hanning',
+                      # set the left, bottom and height to align with the title
+                      left=ax.get_position().x1 - rel_start_pos,
+                      bottom=ax.get_position().y0 - img_rel_y_pos,
+                      height=ax.get_position().height * scale_img)
+            rel_start_pos += move_img
+
+
+def format_match_details(match_detail, team_id, fmt_str='{opposition} ({venue}) {match_date_formatted}') -> str:
+    format_in = "%B %d, %Y at %H:%M:%S %p"
+    match_date = datetime.strptime(
+        match_detail["date"].split(" GMT")[0], format_in)
+    format_out = "%d %b, %Y"
+    match_date_formatted = match_date.strftime(format_out)
+
+    venue = ""
+    opposition = ""
+
+    f = 0
+    a = 0
+    result = "D"
+    if match_detail["winner"] == team_id:
+        result = "W"
+    elif match_detail["winner"] != 0:
+        result = "L"
+
+    for t in match_detail["teamsData"].values():
+        if t["teamId"] == team_id:
+            venue = t["side"][0]
+            f = t["score"]
+        else:
+            opposition_detail = get_team_details(t["teamId"])
+            opposition = opposition_detail["name"]
+            a = t["score"]
+
+    score = f"{f}-{a}"
+
+    return fmt_str.format(
+        opposition=opposition,
+        venue=venue,
+        match_date_formatted=match_date_formatted,
+        result=result,
+        score=score
+    )

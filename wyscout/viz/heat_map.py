@@ -8,6 +8,7 @@ from PIL import Image
 from wyscout.viz.consts import SPONSOR_LOGO, SPONSOR_TEXT, COLOUR_1, COLOUR_2, APP_FONT
 from wyscout.viz.arrow import Arrow
 from wyscout.viz.key_passes import plot_arrows
+from wyscout.viz.utils import add_footer, add_header
 
 
 # From https://mplsoccer.readthedocs.io/en/latest/gallery/pitch_plots/plot_kde.html#sphx-glr-gallery-pitch-plots-plot-kde-py
@@ -19,7 +20,7 @@ def plot_pass_map(
     team: any,
     passes: List[Arrow],
     title: str = None,
-    subtitle: Optional[str] = None
+    subtitle: Optional[List[str]] = None
 ):
     pitch = VerticalPitch(pitch_type="wyscout", pitch_color='#aabb97', line_color='white',
                           stripe_color='#c2d59d', stripe=True, line_zorder=2)
@@ -33,46 +34,13 @@ def plot_pass_map(
     if not title:
         title = f"{player1['lastName']} to {player2['lastName']}"
 
-    if title:
-        axs['title'].text(0, 0.9, title, color='#000009',
-                          va='center', ha='left', fontproperties=APP_FONT.prop, fontsize=20)
-    if subtitle:
-        height = 0.4
-        for s in subtitle:
-            axs['title'].text(0, height, s, color='#000009',
-                              va='center', ha='left', fontproperties=APP_FONT.prop, fontsize=10)
-            height -= 0.25
+    header_imgs = [
+        Image.open(urlopen(player1["imageDataURL"])),
+        Image.open(urlopen(player2["imageDataURL"]))
+    ]
 
-    player1_img = Image.open(urlopen(player1["imageDataURL"]))
-    ax_img = add_image(player1_img, fig, interpolation='hanning',
-                       # set the left, bottom and height to align with the title
-                       left=axs['title'].get_position().x1 - 0.35,
-                       bottom=axs['title'].get_position().y0,
-                       height=axs['title'].get_position().height * 1.3)
-
-    player2_img = Image.open(urlopen(player2["imageDataURL"]))
-    ax_img = add_image(player2_img, fig, interpolation='hanning',
-                       # set the left, bottom and height to align with the title
-                       left=axs['title'].get_position().x1 - 0.15,
-                       bottom=axs['title'].get_position().y0,
-                       height=axs['title'].get_position().height * 1.3)
-
-    logo = Image.open(urlopen(SPONSOR_LOGO))
-    ax_img = add_image(logo, fig, interpolation='hanning',
-                       # set the left, bottom and height to align with the title
-                       left=axs['endnote'].get_position().x0,
-                       bottom=axs['endnote'].get_position().y0,
-                       height=axs['endnote'].get_position().height * 1)
-
-    team_badge = Image.open(urlopen(team["imageDataURL"]))
-    ax_img = add_image(team_badge, fig, interpolation='hanning',
-                       # set the left, bottom and height to align with the title
-                       left=axs['pitch'].get_position().x1 - 0.16,
-                       bottom=axs['pitch'].get_position().y0 + 0.008,
-                       height=axs['pitch'].get_position().height * 0.1)
-
-    axs['endnote'].text(1, 0.3, SPONSOR_TEXT, color='#000009',
-                        va='bottom', ha='right', fontproperties=APP_FONT.prop, fontsize=10)
+    add_header(fig, axs["title"], title, subtitle, imgs=header_imgs)
+    add_footer(fig, axs["endnote"], scale_img=1)
 
     custom_lines = [Line2D([0], [0], color=COLOUR_1, lw=1),
                     Line2D([0], [0], color=COLOUR_2, lw=1),
@@ -123,35 +91,27 @@ def plot_player_action_map(
         axs['title'].text(0, 0, subtitle, color='#000009',
                           va='center', ha='left', fontproperties=APP_FONT.prop, fontsize=10)
 
-    axs['endnote'].text(1, 0.5, SPONSOR_TEXT, color='#000009',
-                        va='bottom', ha='right', fontproperties=APP_FONT.prop, fontsize=10)
-
     ax_img = add_image(player_img, fig, interpolation='hanning',
                        # set the left, bottom and height to align with the title
                        left=axs['title'].get_position().x1 - 0.15,
                        bottom=axs['title'].get_position().y0,
                        height=axs['title'].get_position().height * 1.3)
 
-    logo = Image.open(urlopen(SPONSOR_LOGO))
-    ax_img = add_image(logo, fig, interpolation='hanning',
-                       # set the left, bottom and height to align with the title
-                       left=axs['endnote'].get_position().x0,
-                       bottom=axs['endnote'].get_position().y0,
-                       height=axs['endnote'].get_position().height * 1.5)
+    add_footer(fig, axs['endnote'])
 
     plot_arrows(passes, pitch, axs["pitch"])
     plot_arrows(crosses, pitch, axs["pitch"])
     plt.show()
 
 
-def add_heat_map(locations, pitch, ax):
+def add_heat_map(locations, pitch, ax, levels=100, cmap="Blues"):
     xs = [e[0] for e in locations]
     ys = [e[1] for e in locations]
 
     kde = pitch.kdeplot(xs, ys, ax=ax,
                         # shade using 100 levels so it looks smooth
-                        shade=True, levels=100,
+                        shade=True, levels=levels,
                         # shade the lowest area so it looks smooth
                         # so even if there are no events it gets some color
                         shade_lowest=True,
-                        cmap="Blues")
+                        cmap=cmap)

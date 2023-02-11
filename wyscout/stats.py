@@ -39,12 +39,14 @@ def get_touches_for_player(player_id: int, team_id: int, season_id: int):
     return events_out
 
 
-def get_match_events_for_season(team_id: int, season_id: int):
+def get_match_events_for_season(team_id: int, season_id: int, match_id: int = None, all_events=False):
     matches = get_team_matches(team_id, season_id)
     events_out = []
     for m in matches["matches"]:
+        if match_id is not None and m["matchId"] != match_id:
+            continue
         events = get_match_events(m["matchId"])
         if "events" in events:
             events_out.append(get_events_with_match(
-                m, events["events"], team_id))
+                m, events["events"], team_id if not all_events else None))
     return events_out
