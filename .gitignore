@@ -6,3 +6,4 @@ start_jupyter.sh
 set_vars.sh
 .devcontainer/dev.env
 .env
+.venv
