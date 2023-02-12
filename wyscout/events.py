@@ -2,32 +2,7 @@ from typing import Dict, List, Any, Optional
 from wyscout.api.api import get_request
 from wyscout.api.mongo_cache import cache_request
 from wyscout.team import get_team_squad
-from wyscout.match import get_match_details
-
-
-def get_key_pass_events(match: Dict[str, Any], events: List[Dict[str, Any]], team_id: Optional[str]) -> List[Dict[str, Any]]:
-    key_pass_events = []
-    for event in events:
-        if "key_pass" in event["type"]["secondary"] and (not team_id or event["team"]["id"] == team_id):
-            key_pass_events.append(event)
-    return {
-        "matchDate": match["date"],
-        "opposition": events[0]["opponentTeam"]["name"],
-        "events": key_pass_events
-    }
-
-
-def get_events_with_match(match: Dict[str, Any], events: List[Dict[str, Any]], team_id: Optional[str]) -> List[Dict[str, Any]]:
-    events_out = []
-    for event in events:
-        if (not team_id or event["team"]["id"] == team_id):
-            events_out.append(event)
-    return {
-        "matchId": match["matchId"],
-        "matchDate": match["date"],
-        "opposition": events[0]["opponentTeam"]["name"],
-        "events": events_out
-    }
+from wyscout.match import get_match_details, get_match_details_and_events
 
 
 @cache_request("videos", expires_hr=10000)
@@ -63,3 +38,71 @@ def add_team_to_match_details(match_details: Any) -> Any:
 def get_match_details_with_teams(match_id: int) -> Dict[int, Any]:
     match_details = get_match_details(match_id)
     return add_team_to_match_details(match_details)
+
+
+def get_average_positions(team_id: int, match_id: int, period: Optional[str] = None):
+    match, match_details, squad, team_details = get_match_details_and_events(
+        team_id, match_id)
+
+    events = match["events"]
+    locations = {}
+    for event in events:
+        if period is not None and event["matchPeriod"] != period:
+            continue
+        player_id = event["player"]["id"]
+        if player_id not in locations:
+            locations[player_id] = []
+        locations[player_id].append(event["location"])
+        if event["type"]["primary"] == "pass" and event["pass"]["accurate"]:
+            recipient_id = event["pass"]["recipient"]["id"]
+            if recipient_id not in locations:
+                locations[recipient_id] = []
+            locations[recipient_id].append(event["pass"]["endLocation"])
+
+    squad_average_locations = {}
+    for player_id in locations:
+        if player_id > 0:
+            squad_average_locations[player_id] = {
+                "x": sum([l["x"] for l in locations[player_id]]) / len(locations[player_id]),
+                "y": sum([l["y"] for l in locations[player_id]]) / len(locations[player_id]),
+            }
+
+    team = match_details["teamsData"][str(team_id)]
+    team_average_locations = {}
+    for player_id in squad_average_locations:
+        found = False
+        for player in team["formation"]["lineup"]:
+            player_id = player["playerId"]
+            if player_id not in squad_average_locations:
+                continue
+            if player_id not in team_average_locations:
+                team_average_locations[player_id] = {}
+            lineup_player = [
+                p for p in team["formation"]["lineup"] if p["playerId"] == player_id]
+            if not lineup_player:
+                continue
+            team_average_locations[player_id]["ave_location"] = squad_average_locations[player_id]
+            [p for p in team["formation"]["lineup"]
+                if p["playerId"] == player_id][0]
+            team_average_locations[player_id]["shirt"] = [
+                p for p in team["formation"]["lineup"] if p["playerId"] == player_id][0]["shirtNumber"]
+            team_average_locations[player_id]["start"] = True
+            found = True
+        for player in team["formation"]["bench"]:
+            player_id = player["playerId"]
+            if player_id not in squad_average_locations:
+                continue
+            if player_id not in team_average_locations:
+                team_average_locations[player_id] = {}
+            lineup_player = [
+                p for p in team["formation"]["bench"] if p["playerId"] == player_id]
+            if not lineup_player:
+                continue
+            team_average_locations[player_id]["ave_location"] = squad_average_locations[player_id]
+            team_average_locations[player_id]["shirt"] = lineup_player[0]["shirtNumber"]
+            team_average_locations[player_id]["start"] = False
+            found = True
+        if not found:
+            print("Player not found", player_id)
+
+    return squad_average_locations, team_average_locations
