@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from urllib.request import urlopen
 from mplsoccer import add_image
 
-from wyscout.stats import get_match_events_for_season
+from wyscout.match import get_match_events_for_season, get_match_details_and_events
 from wyscout.viz.arrow import is_first_half, pass_event_to_arrow, ArrowOptions
 from wyscout.viz.consts import COLOUR_1, COLOUR_2, COLOUR_3
 from wyscout.viz.heat_map import plot_player_action_map, plot_pass_map
@@ -15,7 +15,7 @@ from wyscout.viz.shots import plot_shots_compare, plot_match_chances
 from wyscout.viz.consts import SPONSOR_LOGO, SPONSOR_TEXT, COLOUR_1, COLOUR_2, APP_FONT
 from PIL import Image
 from wyscout.viz.utils import format_match_details
-from wyscout.viz.data import get_match_details_and_events, get_shots, get_key_passes
+from wyscout.viz.data import get_shots, get_key_passes
 
 
 def pass_heat_map_for_match(

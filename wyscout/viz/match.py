@@ -147,7 +147,7 @@ def plot_average_positions(
                 ax=ax
             )
 
-            h_offset = fig_height / 15
+            h_offset = fig_height / 13
             v_offset = fig_height * -0.02
             pitch.annotate(
                 pos["shirt"],
@@ -158,6 +158,7 @@ def plot_average_positions(
                 fontsize=fig_height,
                 color=text_colors[0] if pos["start"] else text_colors[1],
                 ha="center",
+                weight='bold',
                 zorder=3,
                 ax=ax
             )

@@ -5,7 +5,7 @@ from wyscout.match import get_team_matches
 from wyscout.viz.heat_map import add_heat_map
 from wyscout.viz.utils import format_match_details, add_footer, add_header
 from wyscout.viz.shots import plot_shots
-from wyscout.viz.data import get_match_details_and_events, get_shots, get_key_passes
+from wyscout.match import get_match_details_and_events
 from mplsoccer import VerticalPitch
 
 
@@ -92,7 +92,7 @@ def plot_team_season_heat_maps(
     pitch = VerticalPitch(pitch_type="wyscout", line_zorder=2,
                           linewidth=1, line_color='black', pad_top=20)
 
-    GRID_HEIGHT = 0.8
+    GRID_HEIGHT = 0.9
     CBAR_WIDTH = 0.03
     fig, axs = pitch.grid(nrows=rows, ncols=cols, figheight=fig_height,
                           # leaves some space on the right hand side for the colorbar
@@ -134,7 +134,7 @@ def plot_team_season_heat_maps(
 
         fmt_str = '{opposition} ({venue})\n{match_date_formatted}\n{result} {score}'
         title = format_match_details(match_details, team_id, fmt_str)
-        ax.text(50, 108, title,
+        ax.text(50, 110, title,
                 ha='center', va='center', fontsize=match_font_size)
         add_heat_map(touches, pitch, ax, levels=50, cmap=cmap)
         plot_shots(shots, shot_colors, pitch, ax)

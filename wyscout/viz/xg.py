@@ -9,7 +9,7 @@ import matplotlib.image as mpimg
 from matplotlib.lines import Line2D
 from imageio import imread
 from matplotlib.offsetbox import (OffsetImage, AnnotationBbox)
-from wyscout.stats import get_match_events_for_season
+from wyscout.match import get_match_events_for_season
 from wyscout.team import get_team_details
 
 from wyscout.viz.data import get_match_details_and_events
