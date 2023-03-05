@@ -24,10 +24,6 @@ def plot_match_heat_map(
     show_passes_received=[]
 ):
     cols = 2
-    matches = get_team_matches(team_id, season)
-    matches["matches"] = [
-        m for m in matches["matches"] if m["status"] == "Played"]
-    match_count = len(matches["matches"])
     pitch = VerticalPitch(pitch_type="wyscout", line_zorder=2,
                           linewidth=1, line_color='black', pad_top=20)
 
@@ -174,3 +170,60 @@ def plot_average_positions(
 
     add_footer(fig, axs["endnote"], scale_img=fig_height /
                10, font_size=footer_font_size)
+
+
+def plot_last_third_passes(
+    team_id: int,
+    match_id: int,
+    fig_height=20,
+    pass_colors=("blue", "cornflowerblue"),
+    subtitle=["Passes in final third"],
+):
+
+    pitch = VerticalPitch(pitch_type="wyscout", line_zorder=2, half=True,
+                          linewidth=1, line_color='black', pad_top=5)
+
+    GRID_HEIGHT = 0.8
+    CBAR_WIDTH = 0.03
+    fig, axs = pitch.grid(nrows=1, ncols=1, figheight=fig_height,
+                          # leaves some space on the right hand side for the colorbar
+                          grid_width=0.88, left=0.025,
+                          endnote_height=0.05, endnote_space=0,
+                          # Turn off the endnote/title axis. I usually do this after
+                          # I am happy with the chart layout and text placement
+                          axis=False,
+                          title_space=0.02, title_height=0.025, grid_height=GRID_HEIGHT)
+
+    match_font_size = fig_height * 2
+    title_font_size = fig_height * 3
+    subtitle_font_size = fig_height * 2.5
+    footer_font_size = fig_height * 1.3
+
+    match, match_details, squad, team_details = get_match_details_and_events(
+        team_id, match_id, True)
+
+    fmt_str = '{opposition} ({venue}), {match_date_formatted}, {result} {score}'
+    header_text = format_match_details(match_details, team_id, fmt_str)
+
+    ax = axs["pitch"]
+    passes = []
+    for e in match["events"]:
+
+        if e["type"]["primary"] == "pass":
+            if e["location"]["x"] > 66:
+                color = pass_colors[0] if e["pass"]["accurate"] else pass_colors[1]
+                passes.append(pass_event_to_arrow(e, [], ArrowOptions(
+                    color=color,
+                    width=2,
+                    highlight=is_goal_pass
+                )))
+    plot_arrows(passes, pitch, ax)
+
+    team = team_details[team_id]
+    team_logo = Image.open(urlopen(team["imageDataURL"]))
+    add_header(fig, axs["title"], header_text, subtitle=subtitle, subtitle_font_size=subtitle_font_size,
+               subtitle_start_pos=-0.7, scale_img=5, font_size=title_font_size, title_va="center", title_pos=(0, 1.3), imgs=[team_logo], img_rel_x_pos=0.11, img_rel_y_pos=0.03)
+
+    add_footer(fig, axs["endnote"], scale_img=1.3, font_size=footer_font_size)
+
+    plt.show()

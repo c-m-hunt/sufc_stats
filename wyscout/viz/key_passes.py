@@ -42,5 +42,5 @@ def plot_arrows(arrows: List[Arrow], pitch: Union[Pitch, VerticalPitch], ax: plt
         if arrow.end == (0, 0):
             arrow.end = arrow.start
         pitch.arrows(arrow.start[0], arrow.start[1], arrow.end[0], arrow.end[1],
-                     color=arrow.color, width=arrow.width, ax=ax, alpha=1, zorder=100
+                     color=arrow.color, width=arrow.width, ax=ax, alpha=1, zorder=100,
                      )
