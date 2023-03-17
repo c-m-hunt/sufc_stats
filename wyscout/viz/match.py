@@ -178,6 +178,7 @@ def plot_last_third_passes(
     fig_height=20,
     pass_colors=("blue", "cornflowerblue"),
     subtitle=["Passes in final third"],
+    cmap="Blues",
 ):
 
     pitch = VerticalPitch(pitch_type="wyscout", line_zorder=2, half=True,
@@ -188,7 +189,7 @@ def plot_last_third_passes(
     fig, axs = pitch.grid(nrows=1, ncols=1, figheight=fig_height,
                           # leaves some space on the right hand side for the colorbar
                           grid_width=0.88, left=0.025,
-                          endnote_height=0.05, endnote_space=0,
+                          endnote_height=0.07, endnote_space=0,
                           # Turn off the endnote/title axis. I usually do this after
                           # I am happy with the chart layout and text placement
                           axis=False,
@@ -207,7 +208,10 @@ def plot_last_third_passes(
 
     ax = axs["pitch"]
     passes = []
+    touches = []
     for e in match["events"]:
+        if e["team"]["id"] == team_id and "location" in e and e["location"]:
+            touches.append([e["location"]["x"], e["location"]["y"]])
 
         if e["type"]["primary"] == "pass":
             if e["location"]["x"] > 66:
@@ -217,6 +221,7 @@ def plot_last_third_passes(
                     width=2,
                     highlight=is_goal_pass
                 )))
+    add_heat_map(touches, pitch, ax, levels=50, cmap=cmap)
     plot_arrows(passes, pitch, ax)
 
     team = team_details[team_id]
@@ -224,6 +229,6 @@ def plot_last_third_passes(
     add_header(fig, axs["title"], header_text, subtitle=subtitle, subtitle_font_size=subtitle_font_size,
                subtitle_start_pos=-0.7, scale_img=5, font_size=title_font_size, title_va="center", title_pos=(0, 1.3), imgs=[team_logo], img_rel_x_pos=0.11, img_rel_y_pos=0.03)
 
-    add_footer(fig, axs["endnote"], scale_img=1.3, font_size=footer_font_size)
+    add_footer(fig, axs["endnote"], scale_img=1, font_size=footer_font_size)
 
     plt.show()

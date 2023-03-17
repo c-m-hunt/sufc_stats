@@ -82,37 +82,54 @@ def plot_team_season_heat_maps(
     cmap="Blues",
     shot_colors=("blue", "cornflowerblue"),
     oppo_shot_colors=("whitesmoke", "darkgrey"),
+    last_x_games=None
 ):
     matches = get_team_matches(team_id, season)
     matches["matches"] = [
         m for m in matches["matches"] if m["status"] == "Played"]
+    subtitle = "Action Maps for 2022/23"
+    if last_x_games:
+        matches["matches"] = matches["matches"][:last_x_games]
+        subtitle = "Action Maps for last {} games".format(last_x_games)
     match_count = len(matches["matches"])
     rows = match_count // cols if match_count % cols == 0 else match_count // cols + 1
 
     pitch = VerticalPitch(pitch_type="wyscout", line_zorder=2,
                           linewidth=1, line_color='black', pad_top=20)
 
-    GRID_HEIGHT = 0.9
+    GRID_HEIGHT = 0.75
     CBAR_WIDTH = 0.03
-    fig, axs = pitch.grid(nrows=rows, ncols=cols, figheight=fig_height,
-                          # leaves some space on the right hand side for the colorbar
-                          grid_width=0.88, left=0.025,
-                          endnote_height=0.03, endnote_space=0,
-                          # Turn off the endnote/title axis. I usually do this after
-                          # I am happy with the chart layout and text placement
-                          axis=False,
-                          title_space=0.02, title_height=0.04, grid_height=GRID_HEIGHT)
 
-    match_font_size = fig_height / 2.5 * (cols / 5)
-    title_font_size = fig_height * 1.3
-    subtitle_font_size = fig_height * 1
-    footer_font_size = fig_height / 2
+    # match_font_size = fig_height / 2.5 * (cols / 5)
+    # title_font_size = fig_height * 1.3
+    # subtitle_font_size = fig_height * 1
+    # footer_font_size = fig_height / 2
+
+    title_height = 0.15
+    footer_height = 0.06
+    match_font_size = fig_height * 2
+    title_font_size = fig_height * 4
+    subtitle_start_pos = 0.4
+    header_img_scale = 1.3 * (cols / 5)
+    header_img_pos_x = 0.07
+    header_img_pos_y = -0.02
+    subtitle_font_size = fig_height * 3
+    footer_font_size = fig_height * 1.5
+    footer_img_scale = fig_height / 6
+
+    fig, axs = pitch.grid(nrows=rows, ncols=cols, figheight=fig_height,
+                          grid_width=0.88, left=0.025,
+                          endnote_height=footer_height, endnote_space=0,
+                          axis=False,
+                          title_space=0.02, title_height=title_height, grid_height=GRID_HEIGHT)
 
     for i, m in enumerate(matches["matches"]):
         col = i % cols
         row = i // cols
-
-        ax = axs["pitch"][row, col]
+        if rows == 1:
+            ax = axs["pitch"][col]
+        else:
+            ax = axs["pitch"][row, col]
 
         try:
             match, match_details, squad, team_details = get_match_details_and_events(
@@ -142,9 +159,12 @@ def plot_team_season_heat_maps(
 
     team = team_details[team_id]
     team_logo = Image.open(urlopen(team["imageDataURL"]))
-    add_header(fig, axs["title"], f"{team['name']}", subtitle=["Action Maps for 2022/23"], subtitle_font_size=subtitle_font_size,
-               subtitle_start_pos=0.2, scale_img=1.3 * (cols / 5), font_size=title_font_size, title_va="center", title_pos=(0, 0.7), imgs=[team_logo], img_rel_x_pos=0.1 * (5/cols))
 
-    add_footer(fig, axs["endnote"], scale_img=1, font_size=footer_font_size)
+    add_header(fig, axs["title"], f"{team['name']}", subtitle=[subtitle], subtitle_font_size=subtitle_font_size,
+               subtitle_start_pos=subtitle_start_pos, scale_img=header_img_scale, font_size=title_font_size, title_va="center", title_pos=(0, 0.7),
+               imgs=[team_logo], img_rel_x_pos=header_img_pos_x, img_rel_y_pos=header_img_pos_y)
+
+    add_footer(fig, axs["endnote"],
+               scale_img=footer_img_scale, font_size=footer_font_size)
 
     plt.show()
