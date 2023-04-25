@@ -82,11 +82,14 @@ def plot_team_season_heat_maps(
     cmap="Blues",
     shot_colors=("blue", "cornflowerblue"),
     oppo_shot_colors=("whitesmoke", "darkgrey"),
-    last_x_games=None
+    last_x_games=None,
+    reversed=False
 ):
     matches = get_team_matches(team_id, season)
     matches["matches"] = [
         m for m in matches["matches"] if m["status"] == "Played"]
+    if reversed:
+        matches["matches"].reverse()
     subtitle = "Action Maps for 2022/23"
     if last_x_games:
         matches["matches"] = matches["matches"][:last_x_games]
@@ -95,7 +98,7 @@ def plot_team_season_heat_maps(
     rows = match_count // cols if match_count % cols == 0 else match_count // cols + 1
 
     pitch = VerticalPitch(pitch_type="wyscout", line_zorder=2,
-                          linewidth=1, line_color='black', pad_top=20)
+                          linewidth=1, line_color='black', pad_top=35)
 
     GRID_HEIGHT = 0.75
     CBAR_WIDTH = 0.03
@@ -105,20 +108,34 @@ def plot_team_season_heat_maps(
     # subtitle_font_size = fig_height * 1
     # footer_font_size = fig_height / 2
 
-    title_height = 0.15
-    footer_height = 0.06
-    match_font_size = fig_height * 2
-    title_font_size = fig_height * 4
-    subtitle_start_pos = 0.4
-    header_img_scale = 1.3 * (cols / 5)
-    header_img_pos_x = 0.07
-    header_img_pos_y = -0.02
-    subtitle_font_size = fig_height * 3
-    footer_font_size = fig_height * 1.5
-    footer_img_scale = fig_height / 6
+    # Three games
+    # title_height = 0.15
+    # footer_height = 0.06
+    # match_font_size = fig_height * 2
+    # title_font_size = fig_height * 4
+    # subtitle_start_pos = 0.4
+    # header_img_scale = 1.3 * (cols / 5)
+    # header_img_pos_x = 0.07
+    # header_img_pos_y = -0.02
+    # subtitle_font_size = fig_height * 3
+    # footer_font_size = fig_height * 1.5
+    # footer_img_scale = fig_height / 6
+
+    title_height = 0.03
+    footer_height = 0.03
+    match_font_size = fig_height * 0.3
+    title_font_size = fig_height * 1.3
+    subtitle_font_size = fig_height * 1
+    subtitle_start_pos = 0.1
+    header_img_scale = 1.2 * (cols / 5)
+    header_img_pos_x = 0.1
+    header_img_pos_y = 0.01
+
+    footer_font_size = fig_height * 0.6
+    footer_img_scale = fig_height / 50
 
     fig, axs = pitch.grid(nrows=rows, ncols=cols, figheight=fig_height,
-                          grid_width=0.88, left=0.025,
+                          left=0.025,
                           endnote_height=footer_height, endnote_space=0,
                           axis=False,
                           title_space=0.02, title_height=title_height, grid_height=GRID_HEIGHT)

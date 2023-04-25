@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
+from typing import List
 import numpy as np
 import matplotlib.pyplot as plt
 from urllib.request import urlopen
@@ -18,36 +19,38 @@ from wyscout.viz.utils import format_match_details
 from wyscout.viz.data import get_shots, get_key_passes
 
 
-def pass_heat_map_for_match(
+def pass_heat_map_for_matches(
     team_id: int,
-    match_id: int
+    match_ids: List[int]
 ):
-    match, match_details, squad, team_details = get_match_details_and_events(
-        team_id, match_id)
-
-    passes = [e for e in match["events"] if e["type"]
-              ["primary"] == "pass"]
-    pass_recipients = defaultdict(lambda: defaultdict(int))
     players = []
-    INCOMPLETE = "Incomplete"
-    OPPOSITION = "Opposition"
-    for p in passes:
-        recipient = p["pass"]["recipient"]["name"]
-        recipient = INCOMPLETE if recipient is None else recipient
-        if recipient != INCOMPLETE and p["pass"]["recipient"]["id"] not in squad:
-            recipient = OPPOSITION
-        pass_recipients[p["player"]["name"]
-                        ][recipient] += 1
-        players.append(p["player"]["name"])
-        players.append(recipient)
+    pass_recipients = defaultdict(lambda: defaultdict(int))
+    for match_id in match_ids:
+        match, match_details, squad, team_details = get_match_details_and_events(
+            team_id, match_id)
 
-    sorted_players = sorted(list(set(players)))
-    from_players = sorted_players.copy()
-    from_players.remove(INCOMPLETE)
-    from_players.remove(OPPOSITION)
-    to_players = from_players.copy()
-    to_players.append(INCOMPLETE)
-    to_players.append(OPPOSITION)
+        passes = [e for e in match["events"] if e["type"]
+                  ["primary"] == "pass"]
+
+        INCOMPLETE = "Incomplete"
+        OPPOSITION = "Opposition"
+        for p in passes:
+            recipient = p["pass"]["recipient"]["name"]
+            recipient = INCOMPLETE if recipient is None else recipient
+            if recipient != INCOMPLETE and p["pass"]["recipient"]["id"] not in squad:
+                recipient = OPPOSITION
+            pass_recipients[p["player"]["name"]
+                            ][recipient] += 1
+            players.append(p["player"]["name"])
+            players.append(recipient)
+
+        sorted_players = sorted(list(set(players)))
+        from_players = sorted_players.copy()
+        from_players.remove(INCOMPLETE)
+        from_players.remove(OPPOSITION)
+        to_players = from_players.copy()
+        to_players.append(INCOMPLETE)
+        to_players.append(OPPOSITION)
 
     count = []
     for p in from_players:
@@ -56,7 +59,8 @@ def pass_heat_map_for_match(
             row.append(pass_recipients[p][r] or 0)
         count.append(row)
     count = np.array(count)
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(300, 10))
+
     im = ax.imshow(count, cmap=plt.cm.Blues)
 
     ax.set_yticks(np.arange(len(from_players)), labels=from_players)

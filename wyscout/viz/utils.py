@@ -45,7 +45,7 @@ def add_header(
 ):
     if title:
         ax.text(title_pos[0], title_pos[1], title, color='#000009',
-                va=title_va, ha=title_ha, fontproperties=APP_FONT.prop, fontsize=font_size)
+                va=title_va, ha=title_ha, fontproperties=APP_FONT.prop, fontsize=font_size, weight='bold')
 
     if subtitle:
         height = 0.4
