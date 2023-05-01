@@ -82,6 +82,7 @@ def plot_team_season_heat_maps(
     cmap="Blues",
     shot_colors=("blue", "cornflowerblue"),
     oppo_shot_colors=("whitesmoke", "darkgrey"),
+    subtitle="Action Maps for 2022/23",
     last_x_games=None,
     reversed=False
 ):
@@ -90,7 +91,6 @@ def plot_team_season_heat_maps(
         m for m in matches["matches"] if m["status"] == "Played"]
     if reversed:
         matches["matches"].reverse()
-    subtitle = "Action Maps for 2022/23"
     if last_x_games:
         matches["matches"] = matches["matches"][:last_x_games]
         subtitle = "Action Maps for last {} games".format(last_x_games)
@@ -173,6 +173,11 @@ def plot_team_season_heat_maps(
         add_heat_map(touches, pitch, ax, levels=50, cmap=cmap)
         plot_shots(shots, shot_colors, pitch, ax)
         plot_shots(oppo_shots, oppo_shot_colors, pitch, ax, True)
+
+    if rows > 1:
+        for i in range(cols - len(matches["matches"]) % cols):
+            ax = axs["pitch"][rows - 1, cols - i - 1]
+            ax.clear()
 
     team = team_details[team_id]
     team_logo = Image.open(urlopen(team["imageDataURL"]))

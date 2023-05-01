@@ -2,17 +2,14 @@ from wyscout.viz.consts import SPONSOR_LOGO, SPONSOR_TEXT, COLOUR_1, COLOUR_2, A
 from mplsoccer import add_image
 from collections import defaultdict
 from typing import List, Dict
-from PIL import Image, ImageEnhance
+from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 from matplotlib.lines import Line2D
 from imageio import imread
 from matplotlib.offsetbox import (OffsetImage, AnnotationBbox)
-from wyscout.match import get_match_events_for_season
+from wyscout.match import get_match_events_for_season, get_match_details_and_events
 from wyscout.team import get_team_details
-
-from wyscout.viz.data import get_match_details_and_events
 
 
 def plot_xg_charts(team_id: int, match_id: int, colours: List[str] = ["blue", "green"]):

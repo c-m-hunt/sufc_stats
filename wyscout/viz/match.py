@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 from urllib.request import urlopen
 from PIL import Image
 from matplotlib import pyplot as plt
@@ -283,6 +283,8 @@ def plot_average_positions(
     fig_height=10,
     colors=["blue", "cornflowerblue"],
     text_colors=["white", "black"],
+    subtitle=["1st Half", "2nd Half"],
+    filter_fn: Optional[callable] = None
 ):
 
     pitch = VerticalPitch(pitch_type="wyscout", line_zorder=2, pitch_color="grass",
@@ -311,9 +313,16 @@ def plot_average_positions(
     fmt_str = '{opposition} ({venue}), {match_date_formatted}, {result} {score}'
     header_text = format_match_details(match_details, team_id, fmt_str)
 
-    for i, period in enumerate(["1H", "2H"]):
+    periods = ["1H", "2H"]
+    filter_fns = [filter_fn, lambda x: not filter_fn(x)]
+    for i in range(2):
+        if not filter_fn:
+            period = periods[i]
+        else:
+            period = None
         ax = axs["pitch"][i]
-        _, positions = get_average_positions(team_id, match_id, period)
+        _, positions = get_average_positions(
+            team_id, match_id, period, filter_fn=filter_fns[i])
 
         for pos in positions.values():
             pitch.scatter(
@@ -345,14 +354,14 @@ def plot_average_positions(
                 ax=ax
             )
 
-        title = "1st Half" if i == 0 else "2nd Half"
+        title = subtitle[0] if i == 0 else subtitle[1]
         ax.text(50, 104, title,
                 ha='center', va='center', fontsize=match_font_size)
 
     team = team_details[team_id]
     team_logo = Image.open(urlopen(team["imageDataURL"]))
     add_header(fig, axs["title"], header_text,
-               subtitle_start_pos=-0.5, scale_img=img_size, font_size=title_font_size, title_va="center", title_pos=(0, 1.3), imgs=[team_logo], img_rel_x_pos=0.11, img_rel_y_pos=0.03)
+               subtitle_start_pos=-0.5, scale_img=img_size, font_size=title_font_size, title_va="center", title_pos=(0, 7), imgs=[team_logo], img_rel_x_pos=0.11, img_rel_y_pos=0.03)
 
     add_footer(fig, axs["endnote"], scale_img=fig_height /
                10, font_size=footer_font_size)
@@ -396,7 +405,9 @@ def plot_last_third_passes(
     passes = []
     touches = []
     for e in match["events"]:
-        if e["team"]["id"] == team_id and "location" in e and e["location"]:
+        if e["team"]["id"] != team_id:
+            continue
+        if "location" in e and e["location"]:
             touches.append([e["location"]["x"], e["location"]["y"]])
 
         if e["type"]["primary"] == "pass":

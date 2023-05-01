@@ -28,7 +28,6 @@ def pass_event_to_arrow(event: Dict[str, Any], highlight_players: List[int], opt
     width = options.width
     edgecolor = options.edgecolor or options.color
     if options.highlight(event):
-        # width = options.highlighted_width
         color = options.highlighted_color
     return Arrow(
         start=(event["location"]["x"], event["location"]["y"]),

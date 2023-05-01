@@ -40,7 +40,7 @@ def get_match_details_with_teams(match_id: int) -> Dict[int, Any]:
     return add_team_to_match_details(match_details)
 
 
-def get_average_positions(team_id: int, match_id: int, period: Optional[str] = None):
+def get_average_positions(team_id: int, match_id: int, period: Optional[str] = None, filter_fn: callable = None):
     match, match_details, squad, team_details = get_match_details_and_events(
         team_id, match_id)
 
@@ -49,6 +49,9 @@ def get_average_positions(team_id: int, match_id: int, period: Optional[str] = N
     for event in events:
         if period is not None and event["matchPeriod"] != period:
             continue
+        if filter_fn is not None:
+            if not filter_fn(event):
+                continue
         player_id = event["player"]["id"]
         if player_id not in locations:
             locations[player_id] = []
