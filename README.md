@@ -11,11 +11,7 @@ XEN - England
 ## Run
 Open in VS Code Devcontainer
 
-```
-poetry run jupyter lab
-```
-
-Go to the link in the terminal.
+Open notebooks in `notebooks` folder and use VSCode Jupyter extension to run.
 
 ## References
 
