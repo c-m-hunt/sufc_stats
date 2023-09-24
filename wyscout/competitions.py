@@ -9,6 +9,13 @@ def get_competitions(area_id: str) -> any:
     return get_request(url, params)
 
 
+@cache_request("competitions", expires_hr=1000)
+def get_competition_seasons(competition_id: str) -> any:
+    url = f"competitions/{competition_id}/seasons"
+    params = {"fetch": "competition"}
+    return get_request(url, params)
+
+
 # @cache_request("competitionPlayers", expires_hr=24)
 def get_competition_players(competition_id: int, limit: int = 100, page: int = 1) -> any:
     url = f"competitions/{competition_id}/players"
