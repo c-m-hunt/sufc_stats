@@ -16,6 +16,11 @@ def get_competition_seasons(competition_id: str) -> any:
     return get_request(url, params)
 
 
+def get_competition_rounds(competition_id: str) -> any:
+    url = f"rounds/{competition_id}"
+    return get_request(url, {})
+
+
 # @cache_request("competitionPlayers", expires_hr=24)
 
 
