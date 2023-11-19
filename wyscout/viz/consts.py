@@ -1,6 +1,6 @@
 from mplsoccer import FontManager
 
-SPONSOR_LOGO = "https://pbs.twimg.com/profile_images/1564027858330292225/P2Imu-_S_400x400.jpg"
+SPONSOR_LOGO = "https://pbs.twimg.com/profile_images/1715299679066267648/dfC6MiUl_400x400.jpg"
 SPONSOR_TEXT = "@shrimperstats"
 
 URL = 'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto%5Bwdth,wght%5D.ttf'

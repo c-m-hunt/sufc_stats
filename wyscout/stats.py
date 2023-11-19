@@ -1,4 +1,4 @@
-from wyscout.match import get_team_matches, get_match_events, get_events_with_match
+from wyscout.match import get_team_matches, get_match_events, get_events_with_match, get_match_details
 
 
 def get_touches_in_box(team_id: int, season: int, match_id: int = None):
@@ -36,3 +36,13 @@ def get_touches_for_player(player_id: int, team_id: int, season_id: int):
                     "events": touches
                 })
     return events_out
+
+def get_matches_for_player(player_id: int, team_id: int, season_id: int):
+    matches = get_team_matches(team_id, season_id)
+    return [m for m in matches["matches"] if player_in_match(player_id, get_match_details(m["matchId"]))]
+
+def player_in_match(player_id: int, match_details):
+    team_ids = match_details["teamsData"].keys()
+    team1_lineup = [l["playerId"] for l in match_details["teamsData"][list(team_ids)[0]]["formation"]["lineup"]]
+    team2_lineup = [l["playerId"] for l in match_details["teamsData"][list(team_ids)[1]]["formation"]["lineup"]]
+    return player_id in team1_lineup or player_id in team2_lineup
