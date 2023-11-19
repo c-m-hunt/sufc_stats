@@ -4,6 +4,9 @@ from typing import Any, List
 import matplotlib.pyplot as plt
 from mplsoccer import FontManager, VerticalPitch
 
+from wyscout.viz.consts import COLOUR_1, COLOUR_3
+from wyscout.viz.utils import add_footer
+
 
 def plot_shots_compare(
     match_events: any,
@@ -92,53 +95,13 @@ def plot_match_chances(
     if not colors:
         colors = ["red", "blue"]
 
-    pitch = VerticalPitch(
-        pitch_type="wyscout",
-        half=True,
-        goal_type="box",
-        pad_bottom=-20,
-        pitch_color="grass",
-        line_color="white",
-        stripe=True,
-    )
-
-    fig, axs = pitch.grid(
-        figheight=8,
-        endnote_height=0,
-        title_height=0.1,
-        title_space=0.02,
-        axis=False,
-        grid_height=0.83,
-    )
-
-    plt.style.use(style)
-
-    robotto_regular = FontManager()
-
-    axs["title"].text(
-        0.5,
-        0.5,
+    plot_chances(
+        match["events"],
         match["label"],
-        va="center",
-        ha="center",
-        color="black",
-        fontproperties=robotto_regular.prop,
-        fontsize=30,
+        include_pens,
+        colors,
+        style,
     )
-
-    event_types = ["shot"]
-    if include_pens:
-        event_types.append("penalty")
-
-    shots = [
-        e
-        for e in match["events"]
-        if e["type"]["primary"] in event_types and team_id != e["team"]["id"]
-    ]
-
-    plot_shots(shots, colors[0], pitch, axs["pitch"])
-
-    plt.show()
 
 
 def plot_shots(shots, color, pitch, ax, reverse=False):
@@ -163,3 +126,60 @@ def plot_shots(shots, color, pitch, ax, reverse=False):
             marker="o",
             ax=ax,
         )
+
+
+def plot_chances(
+    chances: any,
+    title: str,
+    include_pens: bool = False,
+    colors: List[str] = None,
+    style: str = "fivethirtyeight",
+):
+    if not colors:
+        colors = [COLOUR_3, COLOUR_1]
+
+    pitch = VerticalPitch(
+        pitch_type="wyscout",
+        half=True,
+        goal_type="box",
+        pad_bottom=-20,
+        pitch_color="grass",
+        line_color="white",
+        stripe=True,
+    )
+
+    fig, axs = pitch.grid(
+        figheight=8,
+        endnote_height=0.08,
+        title_height=0.1,
+        title_space=0.02,
+        axis=False,
+        grid_height=0.78,
+    )
+
+    plt.style.use(style)
+
+    robotto_regular = FontManager()
+
+    axs["title"].text(
+        0.5,
+        0.5,
+        title,
+        va="center",
+        ha="center",
+        color="black",
+        fontproperties=robotto_regular.prop,
+        fontsize=30,
+    )
+
+    event_types = ["shot"]
+    if include_pens:
+        event_types.append("penalty")
+
+    shots = [e for e in chances if e["type"]["primary"] in event_types]
+
+    plot_shots(shots, tuple(colors), pitch, axs["pitch"])
+
+    add_footer(fig, axs["endnote"], font_size=14, scale_img=1)
+
+    plt.show()

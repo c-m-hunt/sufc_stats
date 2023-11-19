@@ -8,7 +8,7 @@ import numpy as np
 from mplsoccer import add_image
 from PIL import Image
 
-from wyscout.match import (get_match_details_and_events,
+from wyscout.match import (get_match_details_and_events, get_match_events,
                            get_match_events_for_season)
 from wyscout.team import get_team_details, get_team_squad
 from wyscout.viz.arrow import ArrowOptions, is_first_half, pass_event_to_arrow
@@ -17,7 +17,8 @@ from wyscout.viz.consts import (APP_FONT, COLOUR_1, COLOUR_2, COLOUR_3,
 from wyscout.viz.data import get_key_passes, get_shots
 from wyscout.viz.heat_map import plot_pass_map, plot_player_action_map
 from wyscout.viz.key_passes import plot_key_passes
-from wyscout.viz.shots import plot_match_chances, plot_shots_compare
+from wyscout.viz.shots import (plot_chances, plot_match_chances,
+                               plot_shots_compare)
 from wyscout.viz.utils import format_match_details
 
 
@@ -208,3 +209,27 @@ def shot_compare_map(team_id: int, season_id: int, compare_last_n: int = 1):
 def shot_map(team_id: int, season_id: int):
     match_events = get_shots(team_id, season_id)
     plot_match_chances(match_events[0], True, [COLOUR_1, COLOUR_3])
+
+
+def shot_map_for_matches(
+    matches: any,
+    team_id: int,
+    title: str,
+    include_pens: bool = False,
+    forAgainst: str = "for",
+):
+    shots = []
+    event_types = ["shot"]
+    if include_pens:
+        event_types.append("penalty")
+    for m in matches:
+        events = get_match_events(m["matchId"])
+        for e in events["events"]:
+            if (
+                e["type"]["primary"] in event_types
+                and e["team" if forAgainst == "for" else "opponentTeam"]["id"]
+                == team_id
+            ):
+                shots.append(e)
+
+    plot_chances(shots, title, True, colors=[COLOUR_1, COLOUR_2])
