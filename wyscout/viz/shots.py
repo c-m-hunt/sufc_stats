@@ -1,7 +1,8 @@
-from typing import List, Any
-from mplsoccer import VerticalPitch, FontManager
-import matplotlib.pyplot as plt
 import math
+from typing import Any, List
+
+import matplotlib.pyplot as plt
+from mplsoccer import FontManager, VerticalPitch
 
 
 def plot_shots_compare(
@@ -12,10 +13,22 @@ def plot_shots_compare(
     colors: list = ["red", "blue"],
     style: str = "fivethirtyeight",
 ):
-    pitch = VerticalPitch(pitch_type="wyscout", half=True, goal_type='box',
-                          pad_bottom=-20, pitch_color='grass', line_color='white', stripe=True)
-    fig, axs = pitch.grid(figheight=15, ncols=2,
-                          title_height=0.1, title_space=0.02, axis=False,)
+    pitch = VerticalPitch(
+        pitch_type="wyscout",
+        half=True,
+        goal_type="box",
+        pad_bottom=-20,
+        pitch_color="grass",
+        line_color="white",
+        stripe=True,
+    )
+    fig, axs = pitch.grid(
+        figheight=15,
+        ncols=2,
+        title_height=0.1,
+        title_space=0.02,
+        axis=False,
+    )
 
     plt.style.use(style)
 
@@ -31,8 +44,16 @@ def plot_shots_compare(
         first_x_games = math.floor(len(match_events) / 2)
         last_x_games = len(match_events) - first_x_games
 
-    axs['title'].text(0.5, 0.5, f'Attempts on goal - first {first_x_games} games vs last {last_x_games} games', va='center',
-                      ha='center', color='black', fontproperties=robotto_regular.prop, fontsize=50)
+    axs["title"].text(
+        0.5,
+        0.5,
+        f"Attempts on goal - first {first_x_games} games vs last {last_x_games} games",
+        va="center",
+        ha="center",
+        color="black",
+        fontproperties=robotto_regular.prop,
+        fontsize=50,
+    )
 
     event_types = ["shot"]
     if include_pens:
@@ -40,8 +61,7 @@ def plot_shots_compare(
 
     def plot_matches(match_events, ax):
         for j, match in enumerate(match_events[:8]):
-            events = [e for e in match["events"] if e["type"]
-                      ["primary"] in event_types]
+            events = [e for e in match["events"] if e["type"]["primary"] in event_types]
             for i, event in enumerate(events):
                 size = event["shot"]["xg"] * 2000
                 color = colors[0] if event["shot"]["isGoal"] is True else colors[1]
@@ -52,11 +72,11 @@ def plot_shots_compare(
                     label=event["player"]["name"],
                     color=color,
                     edgecolors=["black"],
-                    marker='o',
-                    ax=axs["pitch"][ax]
+                    marker="o",
+                    ax=axs["pitch"][ax],
                 )
 
-    plot_matches(match_events[-1 * first_x_games:], 0)
+    plot_matches(match_events[-1 * first_x_games :], 0)
     plot_matches(match_events[:last_x_games], 1)
 
     plt.show()
@@ -67,33 +87,54 @@ def plot_match_chances(
     team_id: int,
     include_pens: bool = False,
     colors: List[str] = None,
-    style: str = "fivethirtyeight"
+    style: str = "fivethirtyeight",
 ):
-
     if not colors:
         colors = ["red", "blue"]
 
-    pitch = VerticalPitch(pitch_type="wyscout", half=True, goal_type='box',
-                          pad_bottom=-20, pitch_color='grass', line_color='white', stripe=True)
+    pitch = VerticalPitch(
+        pitch_type="wyscout",
+        half=True,
+        goal_type="box",
+        pad_bottom=-20,
+        pitch_color="grass",
+        line_color="white",
+        stripe=True,
+    )
 
-    fig, axs = pitch.grid(figheight=8, endnote_height=0,
-                          title_height=0.1, title_space=0.02,
-                          axis=False,
-                          grid_height=0.83)
+    fig, axs = pitch.grid(
+        figheight=8,
+        endnote_height=0,
+        title_height=0.1,
+        title_space=0.02,
+        axis=False,
+        grid_height=0.83,
+    )
 
     plt.style.use(style)
 
     robotto_regular = FontManager()
 
-    axs['title'].text(0.5, 0.5, match["label"], va='center',
-                      ha='center', color='black', fontproperties=robotto_regular.prop, fontsize=30)
+    axs["title"].text(
+        0.5,
+        0.5,
+        match["label"],
+        va="center",
+        ha="center",
+        color="black",
+        fontproperties=robotto_regular.prop,
+        fontsize=30,
+    )
 
     event_types = ["shot"]
     if include_pens:
         event_types.append("penalty")
 
-    shots = [e for e in match["events"] if e["type"]
-             ["primary"] in event_types and team_id != e["team"]["id"]]
+    shots = [
+        e
+        for e in match["events"]
+        if e["type"]["primary"] in event_types and team_id != e["team"]["id"]
+    ]
 
     plot_shots(shots, colors[0], pitch, axs["pitch"])
 
@@ -101,7 +142,6 @@ def plot_match_chances(
 
 
 def plot_shots(shots, color, pitch, ax, reverse=False):
-
     if type(color) is not tuple:
         color = (color, color)
 
@@ -120,6 +160,6 @@ def plot_shots(shots, color, pitch, ax, reverse=False):
             color=color[0] if shot["shot"]["onTarget"] is True else color[1],
             edgecolors=[edge_color],
             linewidth=1.5,
-            marker='o',
-            ax=ax
+            marker="o",
+            ax=ax,
         )

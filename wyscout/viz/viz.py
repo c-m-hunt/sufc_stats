@@ -1,36 +1,35 @@
 from collections import defaultdict
 from datetime import datetime
 from typing import List
-import numpy as np
-import matplotlib.pyplot as plt
 from urllib.request import urlopen
+
+import matplotlib.pyplot as plt
+import numpy as np
 from mplsoccer import add_image
-
-from wyscout.match import get_match_events_for_season, get_match_details_and_events
-from wyscout.viz.arrow import is_first_half, pass_event_to_arrow, ArrowOptions
-from wyscout.viz.consts import COLOUR_1, COLOUR_2, COLOUR_3
-from wyscout.viz.heat_map import plot_player_action_map, plot_pass_map
-from wyscout.viz.key_passes import plot_key_passes
-from wyscout.team import get_team_squad, get_team_details
-from wyscout.viz.shots import plot_shots_compare, plot_match_chances
-from wyscout.viz.consts import SPONSOR_LOGO, SPONSOR_TEXT, COLOUR_1, COLOUR_2, APP_FONT
 from PIL import Image
+
+from wyscout.match import (get_match_details_and_events,
+                           get_match_events_for_season)
+from wyscout.team import get_team_details, get_team_squad
+from wyscout.viz.arrow import ArrowOptions, is_first_half, pass_event_to_arrow
+from wyscout.viz.consts import (APP_FONT, COLOUR_1, COLOUR_2, COLOUR_3,
+                                SPONSOR_LOGO, SPONSOR_TEXT)
+from wyscout.viz.data import get_key_passes, get_shots
+from wyscout.viz.heat_map import plot_pass_map, plot_player_action_map
+from wyscout.viz.key_passes import plot_key_passes
+from wyscout.viz.shots import plot_match_chances, plot_shots_compare
 from wyscout.viz.utils import format_match_details
-from wyscout.viz.data import get_shots, get_key_passes
 
 
-def pass_heat_map_for_matches(
-    team_id: int,
-    match_ids: List[int]
-):
+def pass_heat_map_for_matches(team_id: int, match_ids: List[int]):
     players = []
     pass_recipients = defaultdict(lambda: defaultdict(int))
     for match_id in match_ids:
         match, match_details, squad, team_details = get_match_details_and_events(
-            team_id, match_id)
+            team_id, match_id
+        )
 
-        passes = [e for e in match["events"] if e["type"]
-                  ["primary"] == "pass"]
+        passes = [e for e in match["events"] if e["type"]["primary"] == "pass"]
 
         INCOMPLETE = "Incomplete"
         OPPOSITION = "Opposition"
@@ -39,8 +38,7 @@ def pass_heat_map_for_matches(
             recipient = INCOMPLETE if recipient is None else recipient
             if recipient != INCOMPLETE and p["pass"]["recipient"]["id"] not in squad:
                 recipient = OPPOSITION
-            pass_recipients[p["player"]["name"]
-                            ][recipient] += 1
+            pass_recipients[p["player"]["name"]][recipient] += 1
             players.append(p["player"]["name"])
             players.append(recipient)
 
@@ -67,13 +65,11 @@ def pass_heat_map_for_matches(
     ax.set_xticks(np.arange(len(to_players)), labels=to_players)
     ax.grid(False)
 
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-             rotation_mode="anchor")
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
 
     for i in range(len(from_players)):
         for j in range(len(to_players)):
-            text = ax.text(j, i, count[i, j],
-                           ha="center", va="center", color="black")
+            text = ax.text(j, i, count[i, j], ha="center", va="center", color="black")
 
     fig.tight_layout()
     plt.show()
@@ -92,7 +88,8 @@ def player_heat_map_for_match(
     subtitle="",
 ):
     match, match_details, squad, team_details = get_match_details_and_events(
-        team_id, match_id)
+        team_id, match_id
+    )
 
     touches = []
     passes = []
@@ -103,31 +100,35 @@ def player_heat_map_for_match(
         if period and t["matchPeriod"] != period:
             continue
 
-        def highlight(x): return False
+        def highlight(x):
+            return False
+
         if highlight_by_half:
             highlight = is_first_half
 
         if t["player"]["id"] == player_id:
-
             touches.append([t["location"]["x"], t["location"]["y"]])
 
             if show_crosses and "cross" in t["type"]["secondary"]:
-                crosses.append(pass_event_to_arrow(t, [], ArrowOptions(
-                    width=2,
-                    highlight=highlight
-                )))
+                crosses.append(
+                    pass_event_to_arrow(
+                        t, [], ArrowOptions(width=2, highlight=highlight)
+                    )
+                )
 
-        if show_passes_received and t["type"]["primary"] == "pass" and t["pass"]["recipient"]["id"] == player_id:
-            passes_received.append(pass_event_to_arrow(t, [], ArrowOptions(
-                width=2,
-                highlight=highlight
-            )))
+        if (
+            show_passes_received
+            and t["type"]["primary"] == "pass"
+            and t["pass"]["recipient"]["id"] == player_id
+        ):
+            passes_received.append(
+                pass_event_to_arrow(t, [], ArrowOptions(width=2, highlight=highlight))
+            )
 
         if show_passes and t["type"]["primary"] == "pass":
-            passes.append(pass_event_to_arrow(t, [], ArrowOptions(
-                width=2,
-                highlight=highlight
-            )))
+            passes.append(
+                pass_event_to_arrow(t, [], ArrowOptions(width=2, highlight=highlight))
+            )
 
     plot_player_action_map(
         squad[player_id],
@@ -135,7 +136,7 @@ def player_heat_map_for_match(
         subtitle,
         touches,
         passes or passes_received,
-        crosses
+        crosses,
     )
 
 
@@ -148,12 +149,16 @@ def player_pass_map_for_season(
 ):
     matches = get_match_events_for_season(team_id, season_id)
 
-    evnt = [e for m in matches for e in m["events"]
-            if e["id"] == 1463391358][0]
+    evnt = [e for m in matches for e in m["events"] if e["id"] == 1463391358][0]
 
     all_events = [e for m in matches for e in m["events"]]
-    evnts = [e for e in all_events if e["type"]["primary"] == "pass" and e["player"]
-             ["id"] == player_id_from and e["pass"]["recipient"]["id"] == player_id_to]
+    evnts = [
+        e
+        for e in all_events
+        if e["type"]["primary"] == "pass"
+        and e["player"]["id"] == player_id_from
+        and e["pass"]["recipient"]["id"] == player_id_to
+    ]
 
     evnts.append(evnt)
 
@@ -163,21 +168,30 @@ def player_pass_map_for_season(
 
     passes = []
     for evnt in evnts:
-        def isHighPass(x): return x["pass"]["height"] == "high"
-        width = 3 if evnt["possession"]["attack"] and evnt["possession"]["attack"]["withShot"] else 2
 
-        passes.append(pass_event_to_arrow(evnt, [], ArrowOptions(
-            width=width,
-            color=COLOUR_2 if isHighPass(evnt) else COLOUR_1,
-            edgecolor=COLOUR_3
-        )))
+        def isHighPass(x):
+            return x["pass"]["height"] == "high"
+
+        width = (
+            3
+            if evnt["possession"]["attack"] and evnt["possession"]["attack"]["withShot"]
+            else 2
+        )
+
+        passes.append(
+            pass_event_to_arrow(
+                evnt,
+                [],
+                ArrowOptions(
+                    width=width,
+                    color=COLOUR_2 if isHighPass(evnt) else COLOUR_1,
+                    edgecolor=COLOUR_3,
+                ),
+            )
+        )
 
     plot_pass_map(
-        squad[player_id_from],
-        squad[player_id_to],
-        team,
-        passes,
-        subtitle=subtitle
+        squad[player_id_from], squad[player_id_to], team, passes, subtitle=subtitle
     )
 
 

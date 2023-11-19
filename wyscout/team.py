@@ -1,4 +1,5 @@
 from typing import Optional
+
 from wyscout.api.api import get_request
 from wyscout.api.mongo_cache import cache_request
 
@@ -6,10 +7,7 @@ from wyscout.api.mongo_cache import cache_request
 @cache_request("teamSquad", expires_hr=72)
 def get_team_squad(team_id: int, season_id: int) -> any:
     url = f"teams/{team_id}/squad"
-    params = {
-        "seasonId": season_id,
-        "fetch": "team"
-    }
+    params = {"seasonId": season_id, "fetch": "team"}
     return get_request(url, params)
 
 

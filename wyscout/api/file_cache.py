@@ -1,8 +1,8 @@
-from typing import Dict
-import json
-from os.path import exists
 import hashlib
+import json
 import os
+from os.path import exists
+from typing import Dict
 
 CACHE_BASE = os.getcwd()
 
@@ -20,6 +20,7 @@ def cache_request(func):
             data = func(url, params)
             set_cache(cache_key, data)
         return data
+
     return wrapped
 
 
