@@ -309,14 +309,15 @@ def plot_dual_pitch(
 
     for col in range(cols):
         ax = axs["pitch"][col] if cols > 1 else axs["pitch"]
-        ax.text(
-            50,
-            103,
-            pitch_headers[col],
-            ha="center",
-            va="center",
-            fontsize=match_font_size,
-        )
+        if col + 1 <= len(pitch_headers):
+            ax.text(
+                50,
+                103,
+                pitch_headers[col],
+                ha="center",
+                va="center",
+                fontsize=match_font_size,
+            )
         if touches:
             add_heat_map(touches[col], pitch, ax, levels=50, cmap=cmap)
         if shots:
