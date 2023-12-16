@@ -443,10 +443,12 @@ def plot_average_positions(
     match_font_size = fig_height * 2
     footer_font_size = fig_height * 1.3
     img_size = fig_height * 1.5
+    
+    pitches = 2 if filter_fn else 1
 
     fig, axs = pitch.grid(
         nrows=1,
-        ncols=2,
+        ncols=pitches,
         figheight=fig_height,
         # leaves some space on the right hand side for the colorbar
         grid_width=0.88,
@@ -470,12 +472,9 @@ def plot_average_positions(
 
     periods = ["1H", "2H"]
     filter_fns = [filter_fn, lambda x: not filter_fn(x)]
-    for i in range(2):
-        if not filter_fn:
-            period = periods[i]
-        else:
-            period = None
-        ax = axs["pitch"][i]
+    for i in range(pitches):
+        period = periods[i] if not filter_fn else None        
+        ax = axs["pitch"][i] if filter_fn else axs["pitch"]
         _, positions = get_average_positions(
             team_id, match_id, period, filter_fn=filter_fns[i]
         )

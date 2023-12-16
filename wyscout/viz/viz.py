@@ -210,7 +210,6 @@ def shot_map(team_id: int, season_id: int):
     match_events = get_shots(team_id, season_id)
     plot_match_chances(match_events[0], True, [COLOUR_1, COLOUR_3])
 
-
 def shot_map_for_matches(
     matches: any,
     team_id: int,

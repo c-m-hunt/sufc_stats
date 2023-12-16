@@ -21,9 +21,7 @@ def get_competition_rounds(competition_id: str) -> any:
     return get_request(url, {})
 
 
-# @cache_request("competitionPlayers", expires_hr=24)
-
-
+@cache_request("competitionPlayers", expires_hr=24)
 def get_competition_players(
     competition_id: int, limit: int = 100, page: int = 1
 ) -> any:
