@@ -2,7 +2,6 @@ from typing import Dict, List, Optional, Union
 from urllib.request import urlopen
 
 from matplotlib import pyplot as plt
-from matplotlib.hatch import VerticalHatch
 from mplsoccer import VerticalPitch
 from PIL import Image
 
@@ -13,6 +12,7 @@ from wyscout.viz.heat_map import add_heat_map
 from wyscout.viz.key_passes import plot_arrows
 from wyscout.viz.shots import plot_shots
 from wyscout.viz.utils import add_footer, add_header, format_match_details
+from wyscout.viz.viz import plot_dual_pitch
 
 
 def plot_attempts_heat_map(
@@ -311,28 +311,9 @@ def plot_match_heat_map(
     show_passes_received=[],
     split_halves=True,
 ):
-    cols = 2 if split_halves else 1
-    pitch = VerticalPitch(
-        pitch_type="wyscout", line_zorder=2, linewidth=1, line_color="black", pad_top=20
-    )
-
-    GRID_HEIGHT = 0.8
-    CBAR_WIDTH = 0.03
-
     match, match_details, squad, team_details = get_match_details_and_events(
         team_id, match_id, True
     )
-
-    match_font_size = 15
-    title_font_size = fig_height * 2.8 if split_halves else fig_height * 2
-    subtitle_font_size = fig_height * 2 if split_halves else fig_height * 1.6
-    footer_font_size = fig_height * 1.3
-    scale_badge_img = 5 if split_halves else 7
-    badge_pos = (0.11, 0.03) if split_halves else (0.17, 0.07)
-    title_height = 0.025 if split_halves else 0.015
-    title_space = 0.02 if split_halves else 0
-    subtitle_start_pos = -0.5 if split_halves else -4
-    title_start_height = 1.3 if split_halves else 0
 
     fmt_str = (
         "{opposition} ({venue}), {match_date_formatted}, {result} {score}"
@@ -341,25 +322,13 @@ def plot_match_heat_map(
     )
     header_text = format_match_details(match_details, team_id, fmt_str)
 
-    fig, axs = pitch.grid(
-        nrows=1,
-        ncols=cols,
-        figheight=fig_height,
-        # leaves some space on the right hand side for the colorbar
-        grid_width=0.88,
-        left=0.025,
-        endnote_height=0.05,
-        endnote_space=0,
-        # Turn off the endnote/title axis. I usually do this after
-        # I am happy with the chart layout and text placement
-        axis=False,
-        title_space=title_space,
-        title_height=title_height,
-        grid_height=GRID_HEIGHT,
-    )
+    all_touches = []
+    all_shots = []
+    all_oppo_shots = []
+    all_passes = []
+    pitch_headers = []
 
-    for i in range(cols):
-        ax = axs["pitch"][i] if split_halves else axs["pitch"]
+    for i in range(2 if split_halves else 1):
         touches = []
         shots = []
         oppo_shots = []
@@ -388,34 +357,25 @@ def plot_match_heat_map(
                 )
 
         if split_halves:
-            title = "1st Half" if i == 0 else "2nd Half"
-            ax.text(50, 104, title, ha="center", va="center", fontsize=match_font_size)
-        add_heat_map(touches, pitch, ax, levels=50, cmap=cmap)
-        plot_shots(shots, shot_colors, pitch, ax)
-        plot_shots(oppo_shots, oppo_shot_colors, pitch, ax, True)
-        plot_arrows(passes, pitch, ax)
+            pitch_headers.append("1st Half" if i == 0 else "2nd Half")
+
+        all_touches.append(touches)
+        all_shots.append(shots)
+        all_oppo_shots.append(oppo_shots)
+        all_passes.append(passes)
 
     team = team_details[team_id]
-    team_logo = Image.open(urlopen(team["imageDataURL"]))
-    add_header(
-        fig,
-        axs["title"],
+    team_logo_url = team["imageDataURL"]
+
+    plot_dual_pitch(
         header_text,
-        subtitle=subtitle,
-        subtitle_font_size=subtitle_font_size,
-        subtitle_start_pos=subtitle_start_pos,
-        scale_img=scale_badge_img,
-        font_size=title_font_size,
-        title_va="center",
-        title_pos=(0, title_start_height),
-        imgs=[team_logo],
-        img_rel_x_pos=badge_pos[0],
-        img_rel_y_pos=badge_pos[1],
+        pitch_headers,
+        all_touches,
+        all_shots,
+        all_passes,
+        all_oppo_shots,
+        team_logo_url,
     )
-
-    add_footer(fig, axs["endnote"], scale_img=1.3, font_size=footer_font_size)
-
-    plt.show()
 
 
 def plot_average_positions(

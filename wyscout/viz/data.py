@@ -1,7 +1,11 @@
 from typing import Any, Dict, List, Optional
 
-from wyscout.match import (get_match_details, get_match_events,
-                           get_match_events_for_season, get_team_matches)
+from wyscout.match import (
+    get_match_details,
+    get_match_events,
+    get_match_events_for_season,
+    get_team_matches,
+)
 from wyscout.team import get_team_details, get_team_squad
 
 

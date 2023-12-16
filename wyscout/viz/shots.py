@@ -74,7 +74,7 @@ def plot_dual_shot_map(
 
     plt.style.use(style)
 
-    robotto_regular = APP_FONT
+    font = APP_FONT
 
     if len(shots) != 2:
         raise ValueError("Must have two sets of shots to plot")
@@ -86,7 +86,7 @@ def plot_dual_shot_map(
         va="center",
         ha="center",
         color="black",
-        fontproperties=robotto_regular.prop,
+        fontproperties=font.prop,
         fontsize=50,
     )
 
@@ -104,6 +104,8 @@ def plot_dual_shot_map(
                 marker="o",
                 ax=axs["pitch"][i],
             )
+
+    add_footer(fig, axs["endnote"], font_size=24, scale_img=1)
 
     plt.show()
 
@@ -127,7 +129,7 @@ def plot_match_chances(
     )
 
 
-def plot_shots(shots, color, pitch, ax, reverse=False):
+def plot_shots(shots, color, pitch, ax, reverse=False, base_size=1000):
     if type(color) is not tuple:
         color = (color, color)
 
@@ -136,7 +138,7 @@ def plot_shots(shots, color, pitch, ax, reverse=False):
             shot["location"]["x"] = 100 - shot["location"]["x"]
             shot["location"]["y"] = 100 - shot["location"]["y"]
 
-        size = shot["shot"]["xg"] * 1000
+        size = shot["shot"]["xg"] * base_size
         edge_color = "red" if shot["shot"]["isGoal"] is True else "black"
         pitch.scatter(
             shot["location"]["x"],

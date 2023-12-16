@@ -8,8 +8,7 @@ from mplsoccer import FontManager, Pitch, VerticalPitch, add_image
 from PIL import Image
 
 from wyscout.viz.arrow import Arrow
-from wyscout.viz.consts import (APP_FONT, COLOUR_1, COLOUR_2, SPONSOR_LOGO,
-                                SPONSOR_TEXT)
+from wyscout.viz.consts import APP_FONT, COLOUR_1, COLOUR_2, SPONSOR_LOGO, SPONSOR_TEXT
 from wyscout.viz.key_passes import plot_arrows
 from wyscout.viz.utils import add_footer, add_header
 

@@ -9,11 +9,9 @@ from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from mplsoccer import add_image
 from PIL import Image
 
-from wyscout.match import (get_match_details_and_events,
-                           get_match_events_for_season)
+from wyscout.match import get_match_details_and_events, get_match_events_for_season
 from wyscout.team import get_team_details
-from wyscout.viz.consts import (APP_FONT, COLOUR_1, COLOUR_2, SPONSOR_LOGO,
-                                SPONSOR_TEXT)
+from wyscout.viz.consts import APP_FONT, COLOUR_1, COLOUR_2, SPONSOR_LOGO, SPONSOR_TEXT
 
 
 def plot_xg_charts(team_id: int, match_id: int, colours: List[str] = ["blue", "green"]):

@@ -1,5 +1,9 @@
-from wyscout.match import (get_events_with_match, get_match_details,
-                           get_match_events, get_team_matches)
+from wyscout.match import (
+    get_events_with_match,
+    get_match_details,
+    get_match_events,
+    get_team_matches,
+)
 
 
 def get_touches_in_box(team_id: int, season: int, match_id: int = None):
