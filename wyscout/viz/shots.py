@@ -129,7 +129,7 @@ def plot_match_chances(
     )
 
 
-def plot_shots(shots, color, pitch, ax, reverse=False, base_size=1000):
+def plot_shots(shots, color, pitch, ax, reverse=False, base_size=1000, line_width=1.5):
     if type(color) is not tuple:
         color = (color, color)
 
@@ -147,7 +147,7 @@ def plot_shots(shots, color, pitch, ax, reverse=False, base_size=1000):
             label=shot["player"]["name"],
             color=color[0] if shot["shot"]["onTarget"] is True else color[1],
             edgecolors=[edge_color],
-            linewidth=1.5,
+            linewidth=line_width,
             marker="o",
             ax=ax,
         )

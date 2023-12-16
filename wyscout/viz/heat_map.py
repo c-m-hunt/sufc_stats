@@ -78,7 +78,6 @@ def plot_player_action_map(
     events: any,
     passes: List[Arrow],
     crosses: List[Arrow],
-    points: List[any],
 ):
     pitch = VerticalPitch(pitch_type="wyscout", line_color="grey", line_zorder=2)
     fig, axs = pitch.grid(

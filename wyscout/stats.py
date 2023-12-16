@@ -58,12 +58,6 @@ def get_touches_for_player(
                     and "id" in t["pass"]["recipient"]
                     and t["pass"]["recipient"]["id"] == player_id
                 ]
-            # for t in touches:
-            #     try:
-            #         if t["pass"] and "recipient" in t["pass"] and "id" in t["pass"]["recipient"] and t["pass"]["recipient"]["id"] == player_id:
-            #             pass
-            #     except:
-            #         print(t)
 
             if len(touches) > 0:
                 events_out.append(

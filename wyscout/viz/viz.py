@@ -251,18 +251,21 @@ def shot_map_for_matches(
 def plot_dual_pitch(
     header_text: str,
     pitch_headers: List[str],
-    touches: List[any],
-    shots: List[any],
-    passes: List[any],
-    oppo_shots: List[any],
-    logo_url: str,
+    touches: List[any] = None,
+    shots: List[any] = None,
+    passes: List[any] = None,
+    oppo_shots: List[any] = None,
+    logo_url: str = None,
     fig_height=30,
     cmap="Blues",
     shot_colors=("blue", "cornflowerblue"),
     oppo_shot_colors=("whitesmoke", "darkgrey"),
     subtitle=[],
+    show=True,
 ):
-    cols = len(shots)
+    cols = max(
+        [len(shots or []), len(oppo_shots or []), len(touches or []), len(passes or [])]
+    )
     split = cols > 1
     if len(pitch_headers) != 0 and len(pitch_headers) != cols:
         raise ValueError(
@@ -270,14 +273,14 @@ def plot_dual_pitch(
         )
 
     pitch = VerticalPitch(
-        pitch_type="wyscout", line_zorder=2, linewidth=1, line_color="black", pad_top=20
+        pitch_type="wyscout", line_zorder=2, linewidth=3, line_color="black", pad_top=20
     )
 
     GRID_HEIGHT = 0.8
     CBAR_WIDTH = 0.03
 
     match_font_size = 55
-    title_font_size = fig_height * 3 if split else fig_height * 2
+    title_font_size = fig_height * 5 if split else fig_height * 2
     subtitle_font_size = fig_height * 2 if split else fig_height * 1.6
     footer_font_size = fig_height * 1.3
     scale_badge_img = 5 if split else 7
@@ -314,10 +317,16 @@ def plot_dual_pitch(
             va="center",
             fontsize=match_font_size,
         )
-        add_heat_map(touches[col], pitch, ax, levels=50, cmap=cmap)
-        plot_shots(shots[col], shot_colors, pitch, ax, False, 5000)
-        plot_shots(oppo_shots[col], oppo_shot_colors, pitch, ax, True, 5000)
-        plot_arrows(passes[col], pitch, ax)
+        if touches:
+            add_heat_map(touches[col], pitch, ax, levels=50, cmap=cmap)
+        if shots:
+            plot_shots(shots[col], shot_colors, pitch, ax, False, 5000, line_width=3)
+        if oppo_shots:
+            plot_shots(
+                oppo_shots[col], oppo_shot_colors, pitch, ax, True, 5000, line_width=3
+            )
+        if passes:
+            plot_arrows(passes[col], pitch, ax)
 
     logo_img = Image.open(urlopen(logo_url))
     add_header(
@@ -338,4 +347,7 @@ def plot_dual_pitch(
 
     add_footer(fig, axs["endnote"], scale_img=1.3, font_size=footer_font_size)
 
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        return fig, axs
