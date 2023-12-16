@@ -27,7 +27,9 @@ def get_touches_in_box(team_id: int, season: int, match_id: int = None):
     return touches_in_box
 
 
-def get_touches_for_player(player_id: int, team_id: int, season_id: int, made_received = "made"):
+def get_touches_for_player(
+    player_id: int, team_id: int, season_id: int, made_received="made"
+):
     matches = get_team_matches(team_id, season_id)
     events_out = []
     for m in matches["matches"]:
@@ -36,14 +38,21 @@ def get_touches_for_player(player_id: int, team_id: int, season_id: int, made_re
             if made_received == "made":
                 touches = [
                     t
-                    for t in get_events_with_match(m, events["events"], team_id)["events"]
+                    for t in get_events_with_match(m, events["events"], team_id)[
+                        "events"
+                    ]
                     if t["player"]["id"] == player_id
                 ]
             else:
                 touches = [
                     t
-                    for t in get_events_with_match(m, events["events"], team_id)["events"]
-                    if t["pass"] and "recipient" in t["pass"] and "id" in t["pass"]["recipient"] and t["pass"]["recipient"]["id"] == player_id
+                    for t in get_events_with_match(m, events["events"], team_id)[
+                        "events"
+                    ]
+                    if t["pass"]
+                    and "recipient" in t["pass"]
+                    and "id" in t["pass"]["recipient"]
+                    and t["pass"]["recipient"]["id"] == player_id
                 ]
             # for t in touches:
             #     try:

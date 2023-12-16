@@ -4,7 +4,7 @@ from typing import Any, List
 import matplotlib.pyplot as plt
 from mplsoccer import FontManager, VerticalPitch
 
-from wyscout.viz.consts import COLOUR_1, COLOUR_3, APP_FONT
+from wyscout.viz.consts import APP_FONT, COLOUR_1, COLOUR_3
 from wyscout.viz.utils import add_footer
 
 
@@ -26,7 +26,9 @@ def plot_shots_compare(
         first_x_games = math.floor(len(match_events) / 2)
         last_x_games = len(match_events) - first_x_games
 
-    title =  f"Attempts on goal - first {first_x_games} games vs last {last_x_games} games"
+    title = (
+        f"Attempts on goal - first {first_x_games} games vs last {last_x_games} games"
+    )
     event_types = ["shot"]
     if include_pens:
         event_types.append("penalty")
@@ -34,24 +36,25 @@ def plot_shots_compare(
     def get_events(match_events):
         all_events = []
         for j, match in enumerate(match_events[:8]):
-            all_events.extend([e for e in match["events"] if e["type"]["primary"] in event_types])
+            all_events.extend(
+                [e for e in match["events"] if e["type"]["primary"] in event_types]
+            )
         return all_events
 
     events = [
         get_events(match_events[-1 * first_x_games :]),
-        get_events(match_events[:last_x_games])
+        get_events(match_events[:last_x_games]),
     ]
 
     plot_dual_shot_map(events, title, colors, style)
-
 
 
 def plot_dual_shot_map(
     shots: List[any],
     title: str,
     colors: list = ["red", "blue"],
-    style: str = "fivethirtyeight"):
-   
+    style: str = "fivethirtyeight",
+):
     pitch = VerticalPitch(
         pitch_type="wyscout",
         half=True,
@@ -72,10 +75,10 @@ def plot_dual_shot_map(
     plt.style.use(style)
 
     robotto_regular = APP_FONT
-    
+
     if len(shots) != 2:
         raise ValueError("Must have two sets of shots to plot")
-    
+
     axs["title"].text(
         0.5,
         0.5,
@@ -86,7 +89,7 @@ def plot_dual_shot_map(
         fontproperties=robotto_regular.prop,
         fontsize=50,
     )
-    
+
     for i, shot_coll in enumerate(shots):
         for event in shot_coll:
             size = event["shot"]["xg"] * 2000
@@ -102,8 +105,8 @@ def plot_dual_shot_map(
                 ax=axs["pitch"][i],
             )
 
-    plt.show() 
-    
+    plt.show()
+
 
 def plot_match_chances(
     match: any,
