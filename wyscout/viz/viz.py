@@ -26,11 +26,7 @@ from wyscout.viz.consts import (
 from wyscout.viz.data import get_key_passes, get_shots
 from wyscout.viz.heat_map import add_heat_map, plot_pass_map, plot_player_action_map
 from wyscout.viz.key_passes import plot_arrows, plot_key_passes
-from wyscout.viz.shots import (
-    plot_chances,
-    plot_shots,
-    plot_shots_compare,
-)
+from wyscout.viz.shots import plot_chances, plot_shots, plot_shots_compare
 from wyscout.viz.utils import add_footer, add_header, format_match_details
 
 

@@ -71,33 +71,31 @@ def get_touches_for_player(
     return events_out
 
 
-def get_events_for_player(
-    player_id: int, team_id: int, matches: list
-):
+def get_events_for_player(player_id: int, team_id: int, matches: list):
     event_types = [
         "infraction",
         "interception",
         "pass",
         "shot",
         "duel",
-        "pass_received"
+        "pass_received",
     ]
-    
+
     all_events = []
     for m in matches["matches"]:
         events_out = {}
         events = get_match_events(m["matchId"])
         if "events" in events:
-            oppo = events["events"][0]["opponentTeam"]["name"],
+            oppo = (events["events"][0]["opponentTeam"]["name"],)
             for event_type in event_types:
                 events_out[event_type] = [
-                        t
-                        for t in get_events_with_match(m, events["events"], team_id)[
-                            "events"
-                        ]
-                        if t["player"]["id"] == player_id
-                        and t["type"]["primary"] == event_type
+                    t
+                    for t in get_events_with_match(m, events["events"], team_id)[
+                        "events"
                     ]
+                    if t["player"]["id"] == player_id
+                    and t["type"]["primary"] == event_type
+                ]
             if "passes_received" in events_out.keys():
                 events_out["passes_received"] = [
                     t
@@ -120,7 +118,6 @@ def get_events_for_player(
                     }
                 )
     return all_events
-
 
 
 def get_matches_for_player(player_id: int, team_id: int, season_id: int):
