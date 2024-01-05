@@ -28,7 +28,6 @@ from wyscout.viz.heat_map import add_heat_map, plot_pass_map, plot_player_action
 from wyscout.viz.key_passes import plot_arrows, plot_key_passes
 from wyscout.viz.shots import (
     plot_chances,
-    plot_match_chances,
     plot_shots,
     plot_shots_compare,
 )
@@ -221,7 +220,9 @@ def shot_compare_map(team_id: int, season_id: int, compare_last_n: int = 1):
 
 def shot_map(team_id: int, season_id: int):
     match_events = get_shots(team_id, season_id)
-    plot_match_chances(match_events[0], True, [COLOUR_1, COLOUR_3])
+    plot_chances(
+        match_events[0]["events"], match_events[0]["label"], False, [COLOUR_1, COLOUR_3]
+    )
 
 
 def shot_map_for_matches(
@@ -255,15 +256,16 @@ def plot_dual_pitch(
     shots: List[any] = None,
     passes: List[any] = None,
     oppo_shots: List[any] = None,
-    logo_url: str = None,
+    header_imgs: List[str] = None,
     fig_height=30,
     cmap="Blues",
     shot_colors=("blue", "cornflowerblue"),
     oppo_shot_colors=("whitesmoke", "darkgrey"),
     subtitle=[],
     show=True,
+    cols_override=None,
 ):
-    cols = max(
+    cols = cols_override or max(
         [len(shots or []), len(oppo_shots or []), len(touches or []), len(passes or [])]
     )
     split = cols > 1
@@ -329,7 +331,6 @@ def plot_dual_pitch(
         if passes:
             plot_arrows(passes[col], pitch, ax)
 
-    logo_img = Image.open(urlopen(logo_url))
     add_header(
         fig,
         axs["title"],
@@ -341,7 +342,7 @@ def plot_dual_pitch(
         font_size=title_font_size,
         title_va="center",
         title_pos=(0, title_start_height),
-        imgs=[logo_img],
+        imgs=[Image.open(urlopen(img)) for img in header_imgs] if header_imgs else None,
         img_rel_x_pos=badge_pos[0],
         img_rel_y_pos=badge_pos[1],
     )
@@ -351,4 +352,4 @@ def plot_dual_pitch(
     if show:
         plt.show()
     else:
-        return fig, axs
+        return fig, axs, pitch

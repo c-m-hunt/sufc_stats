@@ -1,7 +1,7 @@
 from mplsoccer import FontManager
 
 SPONSOR_LOGO = (
-    "https://pbs.twimg.com/profile_images/1715299679066267648/dfC6MiUl_400x400.jpg"
+    "https://pbs.twimg.com/profile_images/1741860801126785024/xq5jkn8z_400x400.jpg"
 )
 SPONSOR_TEXT = "@shrimperstats"
 

@@ -110,25 +110,6 @@ def plot_dual_shot_map(
     plt.show()
 
 
-def plot_match_chances(
-    match: any,
-    team_id: int,
-    include_pens: bool = False,
-    colors: List[str] = None,
-    style: str = "fivethirtyeight",
-):
-    if not colors:
-        colors = ["red", "blue"]
-
-    plot_chances(
-        match["events"],
-        match["label"],
-        include_pens,
-        colors,
-        style,
-    )
-
-
 def plot_shots(shots, color, pitch, ax, reverse=False, base_size=1000, line_width=1.5):
     if type(color) is not tuple:
         color = (color, color)

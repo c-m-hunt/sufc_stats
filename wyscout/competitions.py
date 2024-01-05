@@ -29,6 +29,12 @@ def get_competition_players(
     params = {"limit": limit, "page": page}
     return get_request(url, params)
 
+@cache_request("competitionTeams", expires_hr=24)
+def get_competition_teams(
+    competition_id: int
+) -> any:
+    url = f"competitions/{competition_id}/teams"
+    return get_request(url, {})
 
 def get_all_competition_players(competition_id: int) -> any:
     players = []

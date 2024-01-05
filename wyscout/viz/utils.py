@@ -84,7 +84,7 @@ def add_header(
 
     if imgs:
         rel_start_pos = img_rel_x_pos
-        move_img = 0.2
+        move_img = 0.1
         for img in imgs:
             add_image(
                 img,
