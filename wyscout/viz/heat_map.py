@@ -2,9 +2,8 @@ from typing import List, Optional
 from urllib.request import urlopen
 
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.lines import Line2D
-from mplsoccer import FontManager, Pitch, VerticalPitch, add_image
+from mplsoccer import VerticalPitch, add_image
 from PIL import Image
 
 from wyscout.viz.arrow import Arrow

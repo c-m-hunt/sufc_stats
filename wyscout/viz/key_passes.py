@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Union
 
 import matplotlib.pyplot as plt
 from mplsoccer import FontManager, Pitch, VerticalPitch

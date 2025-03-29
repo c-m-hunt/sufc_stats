@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from wyscout.api.api import get_request
 from wyscout.api.mongo_cache import cache_request
