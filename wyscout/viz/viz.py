@@ -51,13 +51,9 @@ def pass_heat_map_for_matches(team_id: int, match_ids: List[int]):
             players.append(p["player"]["name"])
             players.append(recipient)
 
-        sorted_players = sorted(list(set(players)))
+        sorted_players = sorted(list(set([p for p in players if p not in [INCOMPLETE, OPPOSITION, None]])))
         from_players = sorted_players.copy()
-        from_players.remove(INCOMPLETE)
-        from_players.remove(OPPOSITION)
         to_players = from_players.copy()
-        to_players.append(INCOMPLETE)
-        to_players.append(OPPOSITION)
 
     count = []
     for p in from_players:
@@ -260,6 +256,7 @@ def plot_dual_pitch(
     subtitle=[],
     show=True,
     cols_override=None,
+    half=False
 ):
     cols = cols_override or max(
         [len(shots or []), len(oppo_shots or []), len(touches or []), len(passes or [])]
@@ -271,22 +268,26 @@ def plot_dual_pitch(
         )
 
     pitch = VerticalPitch(
-        pitch_type="wyscout", line_zorder=2, linewidth=3, line_color="black", pad_top=20
+        pitch_type="wyscout", line_zorder=2, linewidth=3, line_color="black", pad_top=20, half=half
     )
 
     GRID_HEIGHT = 0.8
     CBAR_WIDTH = 0.03
+    
+    multiplier = 1.3 if half else 1
 
-    match_font_size = 55
-    title_font_size = fig_height * 5 if split else fig_height * 2
-    subtitle_font_size = fig_height * 2 if split else fig_height * 1.6
-    footer_font_size = fig_height * 1.3
-    scale_badge_img = 5 if split else 7
+    match_font_size = (fig_height * 2.4) * multiplier
+    title_font_size = (fig_height * 6 if split else fig_height * 2) * multiplier
+    subtitle_font_size = (fig_height * 2 if split else fig_height * 1.6) * multiplier
+    footer_font_size = (fig_height * 1.3) * multiplier
+    scale_badge_img = (5 if split else 7) * multiplier
     badge_pos = (0.11, 0.03) if split else (0.17, 0.07)
-    title_height = 0.025 if split else 0.015
-    title_space = 0.0 if split else 0
-    subtitle_start_pos = -0.5 if split else -4
-    title_start_height = 1.3 if split else 0
+    title_height = (0.02 if split else 0.015) * multiplier
+    title_space = -0.05 if split else 0
+    subtitle_start_pos = (-0.5 if split else -4) * multiplier
+    title_start_height = (1.3 if split else 0) * multiplier
+    
+    badge_pos = (0.08, 0.03)
 
     fig, axs = pitch.grid(
         nrows=1,
@@ -296,7 +297,7 @@ def plot_dual_pitch(
         grid_width=0.88,
         left=0.025,
         endnote_height=0.05,
-        endnote_space=0,
+        endnote_space=0.02,
         # Turn off the endnote/title axis. I usually do this after
         # I am happy with the chart layout and text placement
         axis=False,
@@ -344,6 +345,333 @@ def plot_dual_pitch(
     )
 
     add_footer(fig, axs["endnote"], scale_img=1.3, font_size=footer_font_size)
+
+    if show:
+        plt.show()
+    else:
+        return fig, axs, pitch
+
+
+def plot_event_map(
+    header_text: str,
+    pitch_header: str,
+    touches: List[any] = None,
+    shots: List[any] = None,
+    passes: List[any] = None,
+    oppo_shots: List[any] = None,
+    header_imgs: List[str] = None,
+    fig_height=20,
+    cmap="Blues",
+    shot_colors=("blue", "cornflowerblue"),
+    oppo_shot_colors=("whitesmoke", "darkgrey"),
+    subtitle=[],
+    half=False,
+    show=True,
+):
+
+    pitch = VerticalPitch(
+        pitch_type='skillcorner', pitch_length=105, pitch_width=68,line_zorder=2, linewidth=3 if half else 1.5, line_color="black", pad_top=20, half=half
+        # pitch_type="wyscout", line_zorder=2, linewidth=3 if half else 1.5, line_color="black", pad_top=20, half=half
+    )
+
+    GRID_HEIGHT = 0.8
+    CBAR_WIDTH = 0.03
+
+    match_font_size =  fig_height * 2 if half else fig_height * 1.5
+    title_font_size = fig_height * 3.5 if half else fig_height * 2.5
+    subtitle_font_size = fig_height * 2.5 if half else fig_height * 1.8
+    footer_font_size = fig_height * 1.6 if half else fig_height * 1
+    scale_badge_img = 9 if half else 3.5
+    badge_pos =  (0.13, 0.13) if half else (0.13, 0.07)
+    title_height = 0.015 if half else 0.025
+    title_space = 0
+    subtitle_start_pos = -5.5 if half else -1.3
+    title_start_height = -3 if half else 0
+    
+    scale_footer_img = 1 if half else 1.5
+
+    fig, axs = pitch.grid(
+        nrows=1,
+        ncols=1,
+        figheight=fig_height,
+        # leaves some space on the right hand side for the colorbar
+        grid_width=0.88,
+        left=0.025,
+        endnote_height=0.05 if half else 0.02,
+        endnote_space=0,
+        # Turn off the endnote/title axis. I usually do this after
+        # I am happy with the chart layout and text placement
+        axis=False,
+        title_space=title_space,
+        title_height=title_height,
+        grid_height=GRID_HEIGHT,
+    )
+
+    ax = axs["pitch"]
+    ax.text(
+        50,
+        103,
+        pitch_header,
+        ha="center",
+        va="center",
+        fontsize=match_font_size,
+        fontproperties=APP_FONT.prop,
+    )
+    
+    col = 0
+    if touches:
+        add_heat_map(touches[col], pitch, ax, levels=50, cmap=cmap)
+    if shots:
+        plot_shots(shots[col], shot_colors, pitch, ax, False, 5000, line_width=3)
+    if oppo_shots:
+        plot_shots(
+            oppo_shots[col], oppo_shot_colors, pitch, ax, True, 5000, line_width=3
+        )
+    if passes:
+        plot_arrows(passes[col], pitch, ax)
+
+    add_header(
+        fig,
+        axs["title"],
+        header_text,
+        subtitle=subtitle,
+        subtitle_font_size=subtitle_font_size,
+        subtitle_start_pos=subtitle_start_pos,
+        scale_img=scale_badge_img,
+        font_size=title_font_size,
+        title_va="center",
+        title_pos=(0, title_start_height),
+        imgs=[Image.open(urlopen(img)) for img in header_imgs] if header_imgs else None,
+        img_rel_x_pos=badge_pos[0],
+        img_rel_y_pos=badge_pos[1],
+    )
+
+    # add_footer(fig, axs["endnote"], scale_img=scale_footer_img, font_size=footer_font_size)
+
+    if show:
+        plt.show()
+    else:
+        return fig, axs, pitch
+
+
+def plot_dual_pitch(
+    header_text: str,
+    pitch_headers: List[str],
+    touches: List[any] = None,
+    shots: List[any] = None,
+    passes: List[any] = None,
+    oppo_shots: List[any] = None,
+    header_imgs: List[str] = None,
+    fig_height=30,
+    cmap="Blues",
+    shot_colors=("blue", "cornflowerblue"),
+    oppo_shot_colors=("whitesmoke", "darkgrey"),
+    subtitle=[],
+    show=True,
+    cols_override=None,
+    half=False
+):
+    cols = cols_override or max(
+        [len(shots or []), len(oppo_shots or []), len(touches or []), len(passes or [])]
+    )
+    split = cols > 1
+    if len(pitch_headers) != 0 and len(pitch_headers) != cols:
+        raise ValueError(
+            f"pitch_headers must be empty or have the same number of elements"
+        )
+
+    pitch = VerticalPitch(
+        pitch_type="wyscout", line_zorder=2, linewidth=3, line_color="black", pad_top=20, half=half
+    )
+
+    GRID_HEIGHT = 0.8
+    CBAR_WIDTH = 0.03
+    
+    multiplier = 1.3 if half else 1
+
+    match_font_size = (fig_height * 2.4) * multiplier
+    title_font_size = (fig_height * 6 if split else fig_height * 2) * multiplier
+    subtitle_font_size = (fig_height * 2 if split else fig_height * 1.6) * multiplier
+    footer_font_size = (fig_height * 1.3) * multiplier
+    scale_badge_img = (5 if split else 6) * multiplier
+    badge_pos = (0.11, 0.03) if split else (0.5, 0.07)
+    title_height = (0.02 if split else 0.015) * multiplier
+    title_space = -0.05 if split else 0
+    subtitle_start_pos = (-0.5 if split else -4) * multiplier
+    title_start_height = (1.3 if split else 0) * multiplier
+    
+    badge_pos = (0.08, 0.03)
+
+    fig, axs = pitch.grid(
+        nrows=1,
+        ncols=cols,
+        figheight=fig_height,
+        # leaves some space on the right hand side for the colorbar
+        grid_width=0.88,
+        left=0.025,
+        endnote_height=0.05,
+        endnote_space=0.02,
+        # Turn off the endnote/title axis. I usually do this after
+        # I am happy with the chart layout and text placement
+        axis=False,
+        title_space=title_space,
+        title_height=title_height,
+        grid_height=GRID_HEIGHT,
+    )
+
+    for col in range(cols):
+        ax = axs["pitch"][col] if cols > 1 else axs["pitch"]
+        if col + 1 <= len(pitch_headers):
+            ax.text(
+                50,
+                103,
+                pitch_headers[col],
+                ha="center",
+                va="center",
+                fontsize=match_font_size,
+            )
+        if touches:
+            add_heat_map(touches[col], pitch, ax, levels=50, cmap=cmap)
+            for touch in touches[col]:
+                pitch.scatter(
+                    touch[0],
+                    touch[1],
+                    s=200,
+                    color="darkblue",
+                    edgecolors="black",
+                    linewidth=2,
+                    marker="o",
+                    ax=ax,
+                )
+
+        if shots:
+            plot_shots(shots[col], shot_colors, pitch, ax, False, 5000, line_width=3)
+        if oppo_shots:
+            plot_shots(
+                oppo_shots[col], oppo_shot_colors, pitch, ax, True, 5000, line_width=3
+            )
+        if passes:
+            plot_arrows(passes[col], pitch, ax)
+
+    add_header(
+        fig,
+        axs["title"],
+        header_text,
+        subtitle=subtitle,
+        subtitle_font_size=subtitle_font_size,
+        subtitle_start_pos=subtitle_start_pos,
+        scale_img=scale_badge_img,
+        font_size=title_font_size,
+        title_va="center",
+        title_pos=(0, title_start_height),
+        imgs=[Image.open(urlopen(img)) for img in header_imgs] if header_imgs else None,
+        img_rel_x_pos=badge_pos[0],
+        img_rel_y_pos=badge_pos[1],
+    )
+
+    # add_footer(fig, axs["endnote"], scale_img=1.3, font_size=footer_font_size)
+
+    if show:
+        plt.show()
+    else:
+        return fig, axs, pitch
+
+
+def plot_heat_map(
+    header_text: str,
+    pitch_header: str,
+    touches: List[any] = None,
+    shots: List[any] = None,
+    passes: List[any] = None,
+    oppo_shots: List[any] = None,
+    header_imgs: List[str] = None,
+    fig_height=20,
+    cmap="Blues",
+    shot_colors=("blue", "cornflowerblue"),
+    oppo_shot_colors=("whitesmoke", "darkgrey"),
+    subtitle=[],
+    half=False,
+    show=True,
+):
+
+    pitch = VerticalPitch(
+        # pitch_type='skillcorner', pitch_length=105, pitch_width=68,line_zorder=2, linewidth=3 if half else 1.5, line_color="black", pad_top=20, half=half
+        pitch_type="wyscout", line_zorder=2, linewidth=3 if half else 1.5, line_color="black", pad_top=20, half=half
+    )
+
+    GRID_HEIGHT = 0.8
+    CBAR_WIDTH = 0.03
+
+    match_font_size =  fig_height * 2 if half else fig_height * 1.5
+    title_font_size = fig_height * 3.5 if half else fig_height * 2.5
+    subtitle_font_size = fig_height * 2.5 if half else fig_height * 1.8
+    footer_font_size = fig_height * 1.6 if half else fig_height * 1
+    scale_badge_img = 9 if half else 3.5
+    badge_pos =  (0.13, 0.13) if half else (0.13, 0.07)
+    title_height = 0.015 if half else 0.025
+    title_space = 0
+    subtitle_start_pos = -5.5 if half else -1.3
+    title_start_height = -3 if half else -0.5
+    
+    scale_footer_img = 1 if half else 1.5
+
+    fig, axs = pitch.grid(
+        nrows=1,
+        ncols=1,
+        figheight=fig_height,
+        # leaves some space on the right hand side for the colorbar
+        grid_width=0.88,
+        left=0.025,
+        endnote_height=0.05 if half else 0.02,
+        endnote_space=0,
+        # Turn off the endnote/title axis. I usually do this after
+        # I am happy with the chart layout and text placement
+        axis=False,
+        title_space=title_space,
+        title_height=title_height,
+        grid_height=GRID_HEIGHT,
+    )
+
+    ax = axs["pitch"]
+    ax.text(
+        50,
+        105,
+        pitch_header,
+        ha="center",
+        va="center",
+        fontsize=match_font_size,
+        fontproperties=APP_FONT.prop,
+    )
+    
+    col = 0
+    if touches:
+        add_heat_map(touches[col], pitch, ax, levels=50, cmap=cmap)
+    if shots:
+        plot_shots(shots[col], shot_colors, pitch, ax, False, 5000, line_width=3)
+    if oppo_shots:
+        plot_shots(
+            oppo_shots[col], oppo_shot_colors, pitch, ax, True, 5000, line_width=3
+        )
+    if passes:
+        plot_arrows(passes[col], pitch, ax)
+
+    add_header(
+        fig,
+        axs["title"],
+        header_text,
+        subtitle=subtitle,
+        subtitle_font_size=subtitle_font_size,
+        subtitle_start_pos=subtitle_start_pos,
+        scale_img=scale_badge_img,
+        font_size=title_font_size,
+        title_va="center",
+        title_pos=(0, title_start_height),
+        imgs=[Image.open(urlopen(img)) for img in header_imgs] if header_imgs else None,
+        img_rel_x_pos=badge_pos[0],
+        img_rel_y_pos=badge_pos[1],
+    )
+
+    # add_footer(fig, axs["endnote"], scale_img=scale_footer_img, font_size=footer_font_size)
 
     if show:
         plt.show()

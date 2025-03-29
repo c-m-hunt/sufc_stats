@@ -32,13 +32,17 @@ def get_match_details(match_id: int) -> any:
     params = {"details": "tag", "fetch": "teams"}
     return get_request(url, params)
 
+@cache_request("videoDetails")
+def get_video_details(match_id: int) -> any:
+    url = f"videos/{match_id}"
+    params = {}
+    return get_request(url, params)
 
 @cache_request("advancedMatchStats", expires_hr=10000)
 def get_match_advanced_stats(match_id: int) -> any:
     url = f"matches/{match_id}/advancedstats"
     params = {}
     return get_request(url, params)
-
 
 def get_match_details_and_events(team_id: int, match_id: int, all_events: bool = False):
     match_details = get_match_details(match_id)

@@ -11,7 +11,7 @@ from PIL import Image
 
 from wyscout.match import get_match_details_and_events, get_match_events_for_season
 from wyscout.team import get_team_details
-from wyscout.viz.consts import APP_FONT, COLOUR_1, COLOUR_2, SPONSOR_LOGO, SPONSOR_TEXT
+from wyscout.viz.consts import APP_FONT, COLOUR_1, COLOUR_2
 
 
 def plot_xg_charts(team_id: int, match_id: int, colours: List[str] = ["blue", "green"]):
@@ -155,6 +155,7 @@ def plot_attacking_stats(
         edgecolor=edgecolors[1],
         zorder=3,
     )
+    ax3.xaxis.set_tick_params(labelbottom=False)
     ax3.set_xticks(x, [p[0] for p in sorted_players])
     ax3.legend()
 
@@ -168,7 +169,7 @@ def plot_attacking_stats(
     for tick in ax4.get_xticklabels():
         tick.set_rotation(90)
     ax4.legend()
-
+    ax4.patch.set_alpha(0.5)
     plt.subplots_adjust(wspace=0, hspace=0.05)
 
     for ax in axs:

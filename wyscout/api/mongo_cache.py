@@ -22,7 +22,6 @@ def get_cache(collection: str, cache_key: str) -> any:
             return rec["data"]
     return None
 
-
 def set_cache(collection: str, cache_key: str, data: any, expires_hr: int):
     db[collection].insert_one(
         {
@@ -33,23 +32,31 @@ def set_cache(collection: str, cache_key: str, data: any, expires_hr: int):
         }
     )
 
+def delete_cache(collection: str, cache_key: str):
+    db[collection].delete_one({"key": cache_key})
 
 def get_cache_key(args: Dict) -> str:
     key = json.dumps(args)
     return hashlib.md5(key.encode()).hexdigest()
 
 
-def cache_request(collection: str, expires_hr: int = 72):
+def cache_request(collection: str, expires_hr: int = 72, force: bool = False):
     def decorator(func):
         def wrapped(*args, **kwargs):
             cache_key = get_cache_key(
                 {"args": locals()["args"], "kwargs": locals()["kwargs"]}
             )
-            data = get_cache(collection, cache_key)
-            if data is None:
-                data = func(*args, **kwargs)
-                set_cache(collection, cache_key, data, expires_hr)
-            return data
+            if force:
+                delete_cache(collection, cache_key)
+            try:
+                data = get_cache(collection, cache_key)
+                if data is None:
+                    data = func(*args, **kwargs)
+                    set_cache(collection, cache_key, data, expires_hr)
+                return data
+            except Exception as e:
+                print(f"Error in cache_request: {e}")
+                return func(*args, **kwargs)
 
         return wrapped
 

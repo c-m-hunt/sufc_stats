@@ -59,18 +59,21 @@ def plot_key_passes(
 
 def plot_arrows(
     arrows: List[Arrow], pitch: Union[Pitch, VerticalPitch], ax: plt.Axes
-) -> None:
+) -> List[plt.Arrow]:
+    for_legend = []
     for arrow in arrows:
         if arrow.end == (0, 0):
             arrow.end = arrow.start
-        pitch.arrows(
+        for_legend.append(pitch.arrows(
             arrow.start[0],
             arrow.start[1],
             arrow.end[0],
             arrow.end[1],
             color=arrow.color,
             width=arrow.width,
+            headwidth=20, headlength=20,
             ax=ax,
             alpha=1,
-            zorder=100,
-        )
+            zorder=arrow.zorder,
+        ))
+    return for_legend

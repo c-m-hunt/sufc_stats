@@ -8,7 +8,7 @@ from mplsoccer import FontManager, Pitch, VerticalPitch, add_image
 from PIL import Image
 
 from wyscout.viz.arrow import Arrow
-from wyscout.viz.consts import APP_FONT, COLOUR_1, COLOUR_2, SPONSOR_LOGO, SPONSOR_TEXT
+from wyscout.viz.consts import APP_FONT, COLOUR_1, COLOUR_2
 from wyscout.viz.key_passes import plot_arrows
 from wyscout.viz.utils import add_footer, add_header
 
@@ -78,10 +78,11 @@ def plot_player_action_map(
     events: any,
     passes: List[Arrow],
     crosses: List[Arrow],
+    show: bool = True,
 ):
-    pitch = VerticalPitch(pitch_type="wyscout", line_color="grey", line_zorder=2)
+    pitch = VerticalPitch(pitch_type="wyscout", line_color="grey", linewidth=1, line_zorder=2)
     fig, axs = pitch.grid(
-        figheight=8,
+        figheight=16,
         title_height=0.08,
         endnote_space=0,
         title_space=0,
@@ -147,7 +148,10 @@ def plot_player_action_map(
 
     plot_arrows(passes, pitch, axs["pitch"])
     plot_arrows(crosses, pitch, axs["pitch"])
-    plt.show()
+    
+    if show:
+        plt.show()
+    return fig, axs, pitch
 
 
 def add_heat_map(locations, pitch, ax, levels=100, cmap="Blues"):

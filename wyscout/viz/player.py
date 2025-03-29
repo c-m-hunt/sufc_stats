@@ -100,7 +100,7 @@ def plot_team_season_heat_maps(
     cmap="Blues",
     shot_colors=("blue", "cornflowerblue"),
     oppo_shot_colors=("whitesmoke", "darkgrey"),
-    subtitle="Action Maps for 2022/23",
+    subtitle="Action Maps for 2024/25",
     last_x_games=None,
     reversed=False,
 ):

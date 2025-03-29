@@ -1,6 +1,11 @@
 from wyscout.api.api import get_request
 from wyscout.api.mongo_cache import cache_request
 
+@cache_request("areas", expires_hr=1000)
+def get_areas() -> any:
+    url = "areas"
+    return get_request(url, {})
+
 
 @cache_request("competitions", expires_hr=1000)
 def get_competitions(area_id: str) -> any:
@@ -9,7 +14,7 @@ def get_competitions(area_id: str) -> any:
     return get_request(url, params)
 
 
-@cache_request("competitions", expires_hr=1000)
+@cache_request("competitionSeasons", expires_hr=1000)
 def get_competition_seasons(competition_id: str) -> any:
     url = f"competitions/{competition_id}/seasons"
     params = {"fetch": "competition"}
@@ -45,3 +50,20 @@ def get_all_competition_players(competition_id: int) -> any:
             resp = get_competition_players(competition_id, page=page)
             players.extend(resp["players"])
     return players
+
+@cache_request("seasons", expires_hr=1000)
+def get_season_details(season_id: int) -> any:
+    url = f"seasons/{season_id}"
+    return get_request(url, {})
+
+
+@cache_request("seasonFixtures", expires_hr=1000)
+def get_season_fixtures(season_id: int) -> any:
+    url = f"seasons/{season_id}/fixtures"
+    return get_request(url, {})
+
+
+@cache_request("seasonMatches", expires_hr=1000)
+def get_season_matches(season_id: int) -> any:
+    url = f"seasons/{season_id}/matches"
+    return get_request(url, {})
