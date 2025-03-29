@@ -370,8 +370,8 @@ def plot_event_map(
 ):
 
     pitch = VerticalPitch(
-        pitch_type='skillcorner', pitch_length=105, pitch_width=68,line_zorder=2, linewidth=3 if half else 1.5, line_color="black", pad_top=20, half=half
-        # pitch_type="wyscout", line_zorder=2, linewidth=3 if half else 1.5, line_color="black", pad_top=20, half=half
+        # pitch_type='skillcorner', pitch_length=105, pitch_width=68,line_zorder=2, linewidth=3 if half else 1.5, line_color="black", pad_top=20, half=half
+        pitch_type="wyscout", line_zorder=2, linewidth=3 if half else 1.5, line_color="black", pad_top=20, half=half
     )
 
     GRID_HEIGHT = 0.8
@@ -446,7 +446,7 @@ def plot_event_map(
         img_rel_y_pos=badge_pos[1],
     )
 
-    # add_footer(fig, axs["endnote"], scale_img=scale_footer_img, font_size=footer_font_size)
+    add_footer(fig, axs["endnote"], scale_img=scale_footer_img, font_size=footer_font_size)
 
     if show:
         plt.show()
