@@ -7,3 +7,8 @@ set_vars.sh
 .devcontainer/dev.env
 .env
 .venv
+imgs
+.ruff_cache
+.pytest_cache
+.ipynb_checkpoints
+output
