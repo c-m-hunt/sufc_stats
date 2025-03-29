@@ -1,11 +1,10 @@
 from collections import defaultdict
-from datetime import datetime
 from typing import List
 from urllib.request import urlopen
 
 import matplotlib.pyplot as plt
 import numpy as np
-from mplsoccer import VerticalPitch, add_image
+from mplsoccer import VerticalPitch
 from PIL import Image
 
 from wyscout.match import (
@@ -20,8 +19,6 @@ from wyscout.viz.consts import (
     COLOUR_1,
     COLOUR_2,
     COLOUR_3,
-    SPONSOR_LOGO,
-    SPONSOR_TEXT,
 )
 from wyscout.viz.data import get_key_passes, get_shots
 from wyscout.viz.heat_map import add_heat_map, plot_pass_map, plot_player_action_map
@@ -264,7 +261,7 @@ def plot_dual_pitch(
     split = cols > 1
     if len(pitch_headers) != 0 and len(pitch_headers) != cols:
         raise ValueError(
-            f"pitch_headers must be empty or have the same number of elements"
+            "pitch_headers must be empty or have the same number of elements"
         )
 
     pitch = VerticalPitch(
@@ -477,7 +474,7 @@ def plot_dual_pitch(
     split = cols > 1
     if len(pitch_headers) != 0 and len(pitch_headers) != cols:
         raise ValueError(
-            f"pitch_headers must be empty or have the same number of elements"
+            "pitch_headers must be empty or have the same number of elements"
         )
 
     pitch = VerticalPitch(

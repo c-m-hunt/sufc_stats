@@ -1,8 +1,8 @@
 import math
-from typing import Any, List
+from typing import List
 
 import matplotlib.pyplot as plt
-from mplsoccer import FontManager, VerticalPitch
+from mplsoccer import VerticalPitch
 
 from wyscout.viz.consts import APP_FONT, COLOUR_1, COLOUR_3
 from wyscout.viz.utils import add_footer

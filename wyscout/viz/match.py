@@ -6,7 +6,7 @@ from mplsoccer import VerticalPitch
 from PIL import Image
 
 from wyscout.events import get_average_positions
-from wyscout.match import get_match_details_and_events, get_team_matches
+from wyscout.match import get_match_details_and_events
 from wyscout.viz.arrow import ArrowOptions, is_goal_pass, pass_event_to_arrow
 from wyscout.viz.heat_map import add_heat_map
 from wyscout.viz.key_passes import plot_arrows

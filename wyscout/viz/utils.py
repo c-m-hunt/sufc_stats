@@ -3,13 +3,12 @@ from typing import List
 from urllib.request import Request, urlopen
 
 import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib.figure import Figure
 from mplsoccer import add_image
 from PIL import Image
 
 from wyscout.team import get_team_details
-from wyscout.viz.consts import APP_FONT, COLOUR_1, COLOUR_2, SPONSOR_LOGO, SPONSOR_TEXT
+from wyscout.viz.consts import APP_FONT, SPONSOR_LOGO, SPONSOR_TEXT
 
 
 def get_sponsor_logo():

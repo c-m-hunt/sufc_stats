@@ -9,7 +9,7 @@ def get_areas() -> any:
 
 @cache_request("competitions", expires_hr=1000)
 def get_competitions(area_id: str) -> any:
-    url = f"competitions"
+    url = "competitions"
     params = {"areaId": area_id}
     return get_request(url, params)
 
