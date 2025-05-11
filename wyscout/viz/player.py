@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from mplsoccer import VerticalPitch
 from PIL import Image
 
+from wyscout.competitions import get_season_details
 from wyscout.match import get_match_details_and_events, get_team_matches
 from wyscout.team import get_team_squad
 from wyscout.viz.heat_map import add_heat_map
@@ -16,6 +17,8 @@ def plot_player_season_heat_maps(
 ):
     squad = get_team_squad(team_id, season)
     squad = {p["wyId"]: p for p in squad["squad"]}
+
+    season_details = get_season_details(season)
 
     matches = get_team_matches(team_id, season)
     matches["matches"] = [m for m in matches["matches"] if m["status"] == "Played"]
@@ -78,7 +81,7 @@ def plot_player_season_heat_maps(
     add_header(
         fig,
         axs["title"],
-        f"{squad[player_id]['shortName']}\nHeat Maps for 2022/23",
+        f"{squad[player_id]['shortName']}\nHeat Maps for {season_details["name"]}",
         scale_img=1.3,
         font_size=title_font_size,
         title_va="center",

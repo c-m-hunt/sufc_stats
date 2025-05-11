@@ -1,6 +1,7 @@
 from wyscout.api.api import get_request
 from wyscout.api.mongo_cache import cache_request
 
+
 @cache_request("areas", expires_hr=1000)
 def get_areas() -> any:
     url = "areas"
@@ -11,6 +12,12 @@ def get_areas() -> any:
 def get_competitions(area_id: str) -> any:
     url = "competitions"
     params = {"areaId": area_id}
+    return get_request(url, params)
+
+@cache_request("competitionDetail", expires_hr=1000)
+def get_competition_detail(competition_id: str) -> any:
+    url = f"competitions/{competition_id}"
+    params = {"fetch": "competition"}
     return get_request(url, params)
 
 
