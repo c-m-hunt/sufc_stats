@@ -11,6 +11,14 @@ MONGO_HOST = os.getenv("MONGO_HOST", "localhost")
 client = MongoClient(MONGO_HOST, 27017)
 db = client.wyscout
 
+_indexed_collections: set = set()
+
+
+def _ensure_index(collection: str):
+    if collection not in _indexed_collections:
+        db[collection].create_index("key", unique=True, background=True)
+        _indexed_collections.add(collection)
+
 
 def get_cache(collection: str, cache_key: str) -> any:
     rec = db[collection].find_one({"key": cache_key})
@@ -23,13 +31,17 @@ def get_cache(collection: str, cache_key: str) -> any:
     return None
 
 def set_cache(collection: str, cache_key: str, data: any, expires_hr: int):
-    db[collection].insert_one(
+    _ensure_index(collection)
+    db[collection].update_one(
+        {"key": cache_key},
         {
-            "key": cache_key,
-            "data": data,
-            "expires": datetime.datetime.utcnow()
-            + datetime.timedelta(hours=expires_hr),
-        }
+            "$set": {
+                "data": data,
+                "expires": datetime.datetime.utcnow()
+                + datetime.timedelta(hours=expires_hr),
+            }
+        },
+        upsert=True,
     )
 
 def delete_cache(collection: str, cache_key: str):

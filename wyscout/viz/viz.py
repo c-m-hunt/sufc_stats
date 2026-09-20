@@ -31,9 +31,12 @@ def pass_heat_map_for_matches(team_id: int, match_ids: List[int]):
     players = []
     pass_recipients = defaultdict(lambda: defaultdict(int))
     for match_id in match_ids:
-        match, match_details, squad, team_details = get_match_details_and_events(
-            team_id, match_id
-        )
+        try:
+            match, match_details, squad, team_details = get_match_details_and_events(
+                team_id, match_id
+            )
+        except ValueError:
+            continue
 
         passes = [e for e in match["events"] if e["type"]["primary"] == "pass"]
 

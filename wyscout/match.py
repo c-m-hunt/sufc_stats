@@ -59,8 +59,7 @@ def get_match_details_and_events(team_id: int, match_id: int, all_events: bool =
 
     filtered_matches = [m for m in matches if m["matchId"] == match_id]
     if len(filtered_matches) == 0:
-        print("No no match found")
-        return
+        raise ValueError(f"No events found for match {match_id}")
 
     match = filtered_matches[0]
 

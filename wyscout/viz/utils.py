@@ -26,6 +26,9 @@ def get_sponsor_logo():
     return imCropped
 
 def add_footer(fig, ax, font_size=10, scale_img=1.5):
+    if not SPONSOR_TEXT:
+        return
+
     ax.text(
         1,
         0.5,
@@ -37,15 +40,15 @@ def add_footer(fig, ax, font_size=10, scale_img=1.5):
         fontsize=font_size,
     )
 
-    add_image(
-        get_sponsor_logo(),
-        fig,
-        interpolation="hanning",
-        # set the left, bottom and height to align with the title
-        left=ax.get_position().x0,
-        bottom=ax.get_position().y0,
-        height=ax.get_position().height * scale_img,
-    )
+    # add_image(
+    #     get_sponsor_logo(),
+    #     fig,
+    #     interpolation="hanning",
+    #     # set the left, bottom and height to align with the title
+    #     left=ax.get_position().x0,
+    #     bottom=ax.get_position().y0,
+    #     height=ax.get_position().height * scale_img,
+    # )
 
 
 def add_header(

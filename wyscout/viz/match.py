@@ -73,9 +73,12 @@ def plot_attempts_heat_map(
 
     for m in matches:
         match_id = m["matchId"]
-        match, match_details, squad, team_details = get_match_details_and_events(
-            team_id, match_id, True
-        )
+        try:
+            match, match_details, squad, team_details = get_match_details_and_events(
+                team_id, match_id, True
+            )
+        except ValueError:
+            continue
         for e in match["events"]:
             if e["team"]["id"] == team_id and "location" in e and e["location"]:
                 if e["type"]["primary"] == "shot":
@@ -113,7 +116,23 @@ def plot_attempts(
     fig_height=30,
     shot_colors=("blue", "cornflowerblue"),
     include_pens=False,
+    include_free_kicks=False,
+    event_filter=None,
+    group_minutes=None,
+    highlight_filter=None,
+    highlight_colors=("gold", "khaki"),
 ):
+    """Plot the attempts for each group of matches.
+
+    event_filter is an optional callable(match, event) -> bool, used to keep
+    only part of a match - e.g. the time a given player was on the pitch. A
+    list of callables can be given to filter each group differently.
+    group_minutes is an optional list of minutes played per group; when given,
+    the aggregates are shown per 90 minutes rather than per game.
+    highlight_filter is an optional callable(match, event) -> bool (or a list,
+    one per group) marking the attempts to draw in highlight_colors, given as
+    (on target, off target). Highlighted attempts still count in the totals.
+    """
     pitch = VerticalPitch(
         pitch_type="wyscout",
         line_zorder=2,
@@ -162,21 +181,49 @@ def plot_attempts(
         oppo_shots = []
         passes = []
 
+        group_filter = (
+            event_filter[i] if isinstance(event_filter, (list, tuple)) else event_filter
+        )
+        group_highlight = (
+            highlight_filter[i]
+            if isinstance(highlight_filter, (list, tuple))
+            else highlight_filter
+        )
+        highlighted = set()
+
         for m in matches:
             match_id = m["matchId"]
-            match, match_details, squad, team_details = get_match_details_and_events(
-                team_id, match_id, True
-            )
+            try:
+                match, match_details, squad, team_details = get_match_details_and_events(
+                    team_id, match_id, True
+                )
+            except ValueError:
+                continue
 
             for e in match["events"]:
+                if group_filter is not None and not group_filter(m, e):
+                    continue
+
                 if e["team"]["id"] == team_id and "location" in e and e["location"]:
                     touches.append([e["location"]["x"], e["location"]["y"]])
 
-                    if e["type"]["primary"] == "shot":
+                    primary = e["type"]["primary"]
+                    is_attempt = (
+                        primary == "shot"
+                        or (primary == "penalty" and include_pens)
+                        or (
+                            include_free_kicks
+                            and primary == "free_kick"
+                            and "shot" in (e["type"]["secondary"] or [])
+                            and e.get("shot")
+                        )
+                    )
+
+                    if is_attempt:
                         shots.append(e)
 
-                    if e["type"]["primary"] == "penalty" and include_pens:
-                        shots.append(e)
+                        if group_highlight is not None and group_highlight(m, e):
+                            highlighted.add(id(e))
 
                 if e["team"]["id"] != team_id and "location" in e and e["location"]:
                     if e["type"]["primary"] == "shot":
@@ -185,16 +232,31 @@ def plot_attempts(
         attempts_agg = len(shots)
         goals_agg = sum([s["shot"]["isGoal"] for s in shots])
         xg_agg = sum([s["shot"]["xg"] for s in shots])
-        xg_per_shot = xg_agg / attempts_agg
+        xg_per_shot = xg_agg / attempts_agg if attempts_agg else 0
+
+        if group_minutes is not None:
+            minutes = group_minutes[i]
+            rate_label = "/90"
+            rate_divisor = minutes / 90 if minutes else 0
+            count_label = "Minutes"
+            count_value = f"{round(minutes)}"
+        else:
+            rate_label = "/game"
+            rate_divisor = len(matches)
+            count_label = "Matches"
+            count_value = f"{len(matches)}"
+
+        def per_rate(value, dp=1):
+            return round(value / rate_divisor, dp) if rate_divisor else "-"
 
         ax.text(
-            50, 65, "Matches", ha="center", va="center", fontsize=subtitle_font_size
+            50, 65, count_label, ha="center", va="center", fontsize=subtitle_font_size
         )
 
         ax.text(
             50,
             62.5,
-            f"{len(matches)}",
+            count_value,
             ha="center",
             va="center",
             fontsize=subtitle_font_size,
@@ -204,7 +266,7 @@ def plot_attempts(
         ax.text(
             15,
             60,
-            "Attempts(/game)",
+            f"Attempts({rate_label})",
             ha="center",
             va="center",
             fontsize=subtitle_font_size,
@@ -213,7 +275,7 @@ def plot_attempts(
         ax.text(
             15,
             57.5,
-            f"{attempts_agg} ({round(attempts_agg / len(matches), 1)})",
+            f"{attempts_agg} ({per_rate(attempts_agg)})",
             ha="center",
             va="center",
             fontsize=subtitle_font_size,
@@ -223,7 +285,7 @@ def plot_attempts(
         ax.text(
             40,
             60,
-            "Goals(/game)",
+            f"Goals({rate_label})",
             ha="center",
             va="center",
             fontsize=subtitle_font_size,
@@ -232,7 +294,7 @@ def plot_attempts(
         ax.text(
             40,
             57.5,
-            f"{goals_agg} ({round(goals_agg / len(matches), 1)})",
+            f"{goals_agg} ({per_rate(goals_agg)})",
             ha="center",
             va="center",
             fontsize=subtitle_font_size,
@@ -240,13 +302,18 @@ def plot_attempts(
         )
 
         ax.text(
-            65, 60, "xG(/game)", ha="center", va="center", fontsize=subtitle_font_size
+            65,
+            60,
+            f"xG({rate_label})",
+            ha="center",
+            va="center",
+            fontsize=subtitle_font_size,
         )
 
         ax.text(
             65,
             57.5,
-            f"{round(xg_agg, 1)} ({round(xg_agg / len(matches), 1)})",
+            f"{round(xg_agg, 1)} ({per_rate(xg_agg)})",
             ha="center",
             va="center",
             fontsize=subtitle_font_size,
@@ -267,7 +334,8 @@ def plot_attempts(
             weight="bold",
         )
 
-        plot_shots(shots, shot_colors, pitch, ax)
+        plot_shots([s for s in shots if id(s) not in highlighted], shot_colors, pitch, ax)
+        plot_shots([s for s in shots if id(s) in highlighted], highlight_colors, pitch, ax)
         plot_arrows(passes, pitch, ax)
 
         ax.text(

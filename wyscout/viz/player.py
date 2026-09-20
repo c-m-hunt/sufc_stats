@@ -58,9 +58,12 @@ def plot_player_season_heat_maps(
 
         ax = axs["pitch"][row, col]
 
-        match, match_details, squad, team_details = get_match_details_and_events(
-            team_id, m["matchId"], False
-        )
+        try:
+            match, match_details, squad, team_details = get_match_details_and_events(
+                team_id, m["matchId"], False
+            )
+        except ValueError:
+            continue
 
         touches = []
         shots = []
@@ -103,7 +106,7 @@ def plot_team_season_heat_maps(
     cmap="Blues",
     shot_colors=("blue", "cornflowerblue"),
     oppo_shot_colors=("whitesmoke", "darkgrey"),
-    subtitle="Action Maps for 2024/25",
+    subtitle="Action Maps for 2025/26",
     last_x_games=None,
     reversed=False,
 ):
