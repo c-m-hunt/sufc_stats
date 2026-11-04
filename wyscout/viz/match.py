@@ -1,778 +1,252 @@
-from typing import Dict, List, Optional, Union
-from urllib.request import urlopen
+"""Match and match-group pitch charts: attempts, average positions, final-third passes, xG race."""
 
-from matplotlib import pyplot as plt
-from mplsoccer import VerticalPitch
-from PIL import Image
+from collections import defaultdict
+from collections.abc import Sequence
+from dataclasses import dataclass, field
+from typing import Any
 
-from wyscout.events import get_average_positions
-from wyscout.match import get_match_details_and_events
-from wyscout.viz.arrow import ArrowOptions, is_goal_pass, pass_event_to_arrow
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+
+from wyscout.viz.arrows import Arrow, plot_arrows
+from wyscout.viz.consts import APP_FONT, TEAM_COLOURS
 from wyscout.viz.heat_map import add_heat_map
-from wyscout.viz.key_passes import plot_arrows
+from wyscout.viz.pitch import make_pitch, pitch_axes, pitch_grid
 from wyscout.viz.shots import plot_shots
-from wyscout.viz.utils import add_footer, add_header, format_match_details
-from wyscout.viz.viz import plot_dual_pitch
+from wyscout.viz.utils import add_footer, add_header, panel_title
+
+Event = dict[str, Any]
 
 
-def plot_attempts_heat_map(
-    matches: List[Dict],
-    team_id: int,
-    header_text: str,
-    subtitle_text: str,
-    cmap="Blues",
-    fig_height=30,
-    shot_colors=("blue", "cornflowerblue"),
-):
-    pitch = VerticalPitch(
-        pitch_type="wyscout",
-        line_zorder=2,
-        line_color="black",
-        linewidth=1,
-        pad_top=20,
-        half=True,
-    )
+# ── attempts ─────────────────────────────────────────────────────────────────
 
-    GRID_HEIGHT = 0.8
-    CBAR_WIDTH = 0.03
 
-    cols = 1
-    match_font_size = 15
-    title_font_size = fig_height * 3
-    subtitle_font_size = fig_height * 2
-    footer_font_size = fig_height * 1.3
-    scale_badge_img = 13
-    badge_pos = (0.13, 0.1)
-    title_height = 0.01
-    title_space = -0.05
-    subtitle_start_pos = -4
-    title_start_height = 0
+@dataclass
+class AttemptGroup:
+    """The attempts to draw on one half pitch, and what to divide them by."""
 
-    fig, axs = pitch.grid(
-        nrows=1,
-        ncols=cols,
-        figheight=fig_height,
-        # leaves some space on the right hand side for the colorbar
-        grid_width=0.88,
-        left=0.025,
-        endnote_height=0.05,
-        endnote_space=0.02,
-        # Turn off the endnote/title axis. I usually do this after
-        # I am happy with the chart layout and text placement
-        axis=False,
-        title_space=title_space,
-        title_height=title_height,
-        grid_height=GRID_HEIGHT,
-    )
-
-    ax = axs["pitch"]
-    touches = []
-    shots = []
-    oppo_shots = []
-    passes = []
-
-    for m in matches:
-        match_id = m["matchId"]
-        try:
-            match, match_details, squad, team_details = get_match_details_and_events(
-                team_id, match_id, True
-            )
-        except ValueError:
-            continue
-        for e in match["events"]:
-            if e["team"]["id"] == team_id and "location" in e and e["location"]:
-                if e["type"]["primary"] == "shot":
-                    # for i in range(int(e["shot"]["xg"] * 100)):
-                    touches.append([e["location"]["x"], e["location"]["y"]])
-    add_heat_map(touches, pitch, ax, levels=50, cmap=cmap)
-    team = team_details[team_id]
-    team_logo = Image.open(urlopen(team["imageDataURL"]))
-    add_header(
-        fig,
-        axs["title"],
-        header_text,
-        subtitle=subtitle_text,
-        subtitle_font_size=subtitle_font_size,
-        subtitle_start_pos=subtitle_start_pos,
-        scale_img=scale_badge_img,
-        font_size=title_font_size,
-        title_va="center",
-        title_pos=(0, title_start_height),
-        imgs=[team_logo],
-        img_rel_x_pos=badge_pos[0],
-        img_rel_y_pos=badge_pos[1],
-    )
-
-    add_footer(fig, axs["endnote"], scale_img=1.3, font_size=footer_font_size)
-
-    plt.show()
+    label: str
+    shots: list[Event]
+    matches: int = 0  # per-game rates
+    minutes: float | None = None  # given, per-90 rates are shown instead
+    highlighted: list[Event] = field(default_factory=list)  # drawn in the highlight colours
 
 
 def plot_attempts(
-    match_groups: List[List[Dict]],
-    team_id: int,
-    header_text: str,
-    subtitle_text: Union[str, List[str]],
-    fig_height=30,
-    shot_colors=("blue", "cornflowerblue"),
-    include_pens=False,
-    include_free_kicks=False,
-    event_filter=None,
-    group_minutes=None,
-    highlight_filter=None,
-    highlight_colors=("gold", "khaki"),
+    groups: Sequence[AttemptGroup],
+    header: str,
+    fig_height: float = 10,
+    shot_colors: tuple[str, str] = TEAM_COLOURS,
+    highlight_colors: tuple[str, str] = ("gold", "khaki"),
+    badge: Any = None,
+    show: bool = True,
 ):
-    """Plot the attempts for each group of matches.
+    """Half pitches of attempts, one per group, with totals and rates underneath.
 
-    event_filter is an optional callable(match, event) -> bool, used to keep
-    only part of a match - e.g. the time a given player was on the pitch. A
-    list of callables can be given to filter each group differently.
-    group_minutes is an optional list of minutes played per group; when given,
-    the aggregates are shown per 90 minutes rather than per game.
-    highlight_filter is an optional callable(match, event) -> bool (or a list,
-    one per group) marking the attempts to draw in highlight_colors, given as
-    (on target, off target). Highlighted attempts still count in the totals.
+    Marker area is xG, a red ring is a goal, the darker shade is on target.
     """
-    pitch = VerticalPitch(
-        pitch_type="wyscout",
-        line_zorder=2,
-        line_color="black",
-        linewidth=1,
-        pad_top=25,
-        pad_bottom=-10,
-        half=True,
-    )
+    cols = len(groups)
+    pitch = make_pitch(half=True, pad_top=25, pad_bottom=-10)
+    fig, axs = pitch_grid(pitch, ncols=cols, fig_height=fig_height, title_height=0.01,
+                          title_space=-0.05, endnote_height=0.05, endnote_space=0.02)
 
-    GRID_HEIGHT = 0.8
-    CBAR_WIDTH = 0.03
+    title_font = fig_height * (3 if cols == 1 else 5)
+    text_font = fig_height * (2 if cols > 1 else 1.2)
 
-    cols = len(match_groups)
-    title_font_size = fig_height * 3 if cols == 1 else fig_height * 5
-    subtitle_font_size = fig_height * 2 if cols == 1 else fig_height * 2
-    footer_font_size = fig_height * 1.3
-    scale_badge_img = 13
-    badge_pos = (0.13, 0.1) if cols == 1 else (0.06, 0.1)
-    title_height = 0.01
-    title_space = -0.05
-    subtitle_start_pos = -4
-    title_start_height = -3
+    for group, ax in zip(groups, pitch_axes(axs)):
+        shots = group.shots
+        attempts = len(shots)
+        goals = sum(1 for s in shots if s["shot"]["isGoal"])
+        xg = sum(s["shot"]["xg"] for s in shots)
+        xg_per_shot = xg / attempts if attempts else 0
 
-    fig, axs = pitch.grid(
-        nrows=1,
-        ncols=cols,
-        figheight=fig_height,
-        # leaves some space on the right hand side for the colorbar
-        grid_width=0.88,
-        left=0.025,
-        endnote_height=0.05,
-        endnote_space=0.02,
-        # Turn off the endnote/title axis. I usually do this after
-        # I am happy with the chart layout and text placement
-        axis=False,
-        title_space=title_space,
-        title_height=title_height,
-        grid_height=GRID_HEIGHT,
-    )
-
-    for i, matches in enumerate(match_groups):
-        ax = axs["pitch"] if cols == 1 else axs["pitch"][i]
-        touches = []
-        shots = []
-        oppo_shots = []
-        passes = []
-
-        group_filter = (
-            event_filter[i] if isinstance(event_filter, (list, tuple)) else event_filter
-        )
-        group_highlight = (
-            highlight_filter[i]
-            if isinstance(highlight_filter, (list, tuple))
-            else highlight_filter
-        )
-        highlighted = set()
-
-        for m in matches:
-            match_id = m["matchId"]
-            try:
-                match, match_details, squad, team_details = get_match_details_and_events(
-                    team_id, match_id, True
-                )
-            except ValueError:
-                continue
-
-            for e in match["events"]:
-                if group_filter is not None and not group_filter(m, e):
-                    continue
-
-                if e["team"]["id"] == team_id and "location" in e and e["location"]:
-                    touches.append([e["location"]["x"], e["location"]["y"]])
-
-                    primary = e["type"]["primary"]
-                    is_attempt = (
-                        primary == "shot"
-                        or (primary == "penalty" and include_pens)
-                        or (
-                            include_free_kicks
-                            and primary == "free_kick"
-                            and "shot" in (e["type"]["secondary"] or [])
-                            and e.get("shot")
-                        )
-                    )
-
-                    if is_attempt:
-                        shots.append(e)
-
-                        if group_highlight is not None and group_highlight(m, e):
-                            highlighted.add(id(e))
-
-                if e["team"]["id"] != team_id and "location" in e and e["location"]:
-                    if e["type"]["primary"] == "shot":
-                        oppo_shots.append(e)
-
-        attempts_agg = len(shots)
-        goals_agg = sum([s["shot"]["isGoal"] for s in shots])
-        xg_agg = sum([s["shot"]["xg"] for s in shots])
-        xg_per_shot = xg_agg / attempts_agg if attempts_agg else 0
-
-        if group_minutes is not None:
-            minutes = group_minutes[i]
-            rate_label = "/90"
-            rate_divisor = minutes / 90 if minutes else 0
-            count_label = "Minutes"
-            count_value = f"{round(minutes)}"
+        if group.minutes is not None:
+            rate_label, count_label, count_value = "/90", "Minutes", f"{round(group.minutes)}"
+            divisor = group.minutes / 90 if group.minutes else 0
         else:
-            rate_label = "/game"
-            rate_divisor = len(matches)
-            count_label = "Matches"
-            count_value = f"{len(matches)}"
+            rate_label, count_label, count_value = "/game", "Matches", f"{group.matches}"
+            divisor = group.matches
 
-        def per_rate(value, dp=1):
-            return round(value / rate_divisor, dp) if rate_divisor else "-"
+        def rate(value, divisor=divisor):
+            return round(value / divisor, 1) if divisor else "-"
 
-        ax.text(
-            50, 65, count_label, ha="center", va="center", fontsize=subtitle_font_size
-        )
+        tiles = [
+            (50, 65, count_label, count_value),
+            (15, 60, f"Attempts({rate_label})", f"{attempts} ({rate(attempts)})"),
+            (40, 60, f"Goals({rate_label})", f"{goals} ({rate(goals)})"),
+            (65, 60, f"xG({rate_label})", f"{round(xg, 1)} ({rate(xg)})"),
+            (90, 60, "xG/shot", f"{round(xg_per_shot, 2)}"),
+        ]
+        for x, y, label, value in tiles:
+            ax.text(x, y, label, ha="center", va="center", fontsize=text_font)
+            ax.text(x, y - 2.5, value, ha="center", va="center", fontsize=text_font, weight="bold")
 
-        ax.text(
-            50,
-            62.5,
-            count_value,
-            ha="center",
-            va="center",
-            fontsize=subtitle_font_size,
-            weight="bold",
-        )
-
-        ax.text(
-            15,
-            60,
-            f"Attempts({rate_label})",
-            ha="center",
-            va="center",
-            fontsize=subtitle_font_size,
-        )
-
-        ax.text(
-            15,
-            57.5,
-            f"{attempts_agg} ({per_rate(attempts_agg)})",
-            ha="center",
-            va="center",
-            fontsize=subtitle_font_size,
-            weight="bold",
-        )
-
-        ax.text(
-            40,
-            60,
-            f"Goals({rate_label})",
-            ha="center",
-            va="center",
-            fontsize=subtitle_font_size,
-        )
-
-        ax.text(
-            40,
-            57.5,
-            f"{goals_agg} ({per_rate(goals_agg)})",
-            ha="center",
-            va="center",
-            fontsize=subtitle_font_size,
-            weight="bold",
-        )
-
-        ax.text(
-            65,
-            60,
-            f"xG({rate_label})",
-            ha="center",
-            va="center",
-            fontsize=subtitle_font_size,
-        )
-
-        ax.text(
-            65,
-            57.5,
-            f"{round(xg_agg, 1)} ({per_rate(xg_agg)})",
-            ha="center",
-            va="center",
-            fontsize=subtitle_font_size,
-            weight="bold",
-        )
-
-        ax.text(
-            90, 60, "xG/shot", ha="center", va="center", fontsize=subtitle_font_size
-        )
-
-        ax.text(
-            90,
-            57.5,
-            f"{round(xg_per_shot, 2)}",
-            ha="center",
-            va="center",
-            fontsize=subtitle_font_size,
-            weight="bold",
-        )
-
+        highlighted = {id(s) for s in group.highlighted}
         plot_shots([s for s in shots if id(s) not in highlighted], shot_colors, pitch, ax)
         plot_shots([s for s in shots if id(s) in highlighted], highlight_colors, pitch, ax)
-        plot_arrows(passes, pitch, ax)
+        panel_title(ax, group.label, text_font)
 
-        ax.text(
-            50,
-            103,
-            subtitle_text[i],
-            ha="center",
-            va="center",
-            fontsize=subtitle_font_size,
-        )
+    add_header(fig, axs["title"], header, subtitle_start_pos=-4, scale_img=13, font_size=title_font,
+               title_va="center", title_pos=(0, -3), imgs=[badge] if badge else None,
+               img_rel_x_pos=0.13 if cols == 1 else 0.06, img_rel_y_pos=0.1)
+    add_footer(fig, axs["endnote"], scale_img=1.3, font_size=fig_height * 1.3)
 
-    team = team_details[team_id]
-    team_logo = Image.open(urlopen(team["imageDataURL"]))
-    add_header(
-        fig,
-        axs["title"],
-        header_text,
-        subtitle_start_pos=subtitle_start_pos,
-        scale_img=scale_badge_img,
-        font_size=title_font_size,
-        title_va="center",
-        title_pos=(0, title_start_height),
-        imgs=[team_logo],
-        img_rel_x_pos=badge_pos[0],
-        img_rel_y_pos=badge_pos[1],
-    )
-
-    add_footer(fig, axs["endnote"], scale_img=1.3, font_size=footer_font_size)
-
-    plt.show()
+    if show:
+        plt.show()
+    return fig, axs, pitch
 
 
-def plot_match_heat_map(
-    team_id: int,
-    match_id: int,
-    fig_height=30,
-    cmap="Blues",
-    shot_colors=("blue", "cornflowerblue"),
-    oppo_shot_colors=("whitesmoke", "darkgrey"),
-    subtitle=[],
-    show_passes_received=[],
-    split_halves=True,
-    player_id=None,
+def plot_attempts_heat_map(
+    locations: Sequence[Sequence[float]],
+    header: str,
+    subtitle: Sequence[str] | None = None,
+    badge: Any = None,
+    fig_height: float = 10,
+    cmap: str = "Blues",
+    show: bool = True,
 ):
-    match, match_details, squad, team_details = get_match_details_and_events(
-        team_id, match_id, True
-    )
+    """Where attempts come from, as a density map on a half pitch."""
+    pitch = make_pitch(half=True, pad_top=20, pad_bottom=0)
+    fig, axs = pitch_grid(pitch, fig_height=fig_height, title_height=0.01, title_space=-0.05,
+                          endnote_height=0.05, endnote_space=0.02)
+    add_heat_map(locations, pitch, axs["pitch"], levels=50, cmap=cmap)
+    add_header(fig, axs["title"], header, subtitle=subtitle, subtitle_font_size=fig_height * 2,
+               subtitle_start_pos=-4, scale_img=13, font_size=fig_height * 3, title_va="center",
+               title_pos=(0, 0), imgs=[badge] if badge else None, img_rel_x_pos=0.13, img_rel_y_pos=0.1)
+    add_footer(fig, axs["endnote"], scale_img=1.3, font_size=fig_height * 1.3)
+    if show:
+        plt.show()
+    return fig, axs, pitch
 
-    fmt_str = (
-        "{opposition} ({venue}), {match_date_formatted}, {result} {score}"
-        if split_halves
-        else "{opposition} ({venue})\n{match_date_formatted}, {result} {score}"
-    )
-    header_text = format_match_details(match_details, team_id, fmt_str)
 
-    all_touches = []
-    all_shots = []
-    all_oppo_shots = []
-    all_passes = []
-    pitch_headers = []
-
-    for i in range(2 if split_halves else 1):
-        touches = []
-        shots = []
-        oppo_shots = []
-        passes = []
-        for e in match["events"]:
-            if split_halves and e["matchPeriod"] != f"{i+1}H":
-                continue
-            if player_id and e["player"]["id"] != player_id:
-                continue
-            if e["team"]["id"] == team_id and "location" in e and e["location"]:
-                touches.append([e["location"]["x"], e["location"]["y"]])
-                if e["type"]["primary"] == "shot":
-                    shots.append(e)
-
-            if e["team"]["id"] != team_id and "location" in e and e["location"]:
-                if e["type"]["primary"] == "shot":
-                    oppo_shots.append(e)
-
-            if (
-                show_passes_received
-                and e["type"]["primary"] == "pass"
-                and e["pass"]["recipient"]["id"] in show_passes_received
-            ):
-                passes.append(
-                    pass_event_to_arrow(
-                        e, [], ArrowOptions(width=2, highlight=is_goal_pass)
-                    )
-                )
-
-        if split_halves:
-            pitch_headers.append("1st Half" if i == 0 else "2nd Half")
-
-        all_touches.append(touches)
-        # all_shots.append(shots)
-        # all_oppo_shots.append(oppo_shots)
-        # all_passes.append(passes)
-
-    team = team_details[team_id]
-    team_logo_url = team["imageDataURL"]
-
-    plot_dual_pitch(
-        header_text,
-        pitch_headers,
-        all_touches,
-        all_shots,
-        all_passes,
-        all_oppo_shots,
-        [team_logo_url],
-        fig_height=fig_height,
-    )
+# ── average positions ────────────────────────────────────────────────────────
 
 
 def plot_average_positions(
-    team_id: int,
-    match_id: int,
-    fig_height=10,
-    colors=["blue", "cornflowerblue"],
-    text_colors=["white", "black"],
-    subtitle=["1st Half", "2nd Half"],
-    filter_fn: Optional[callable] = None,
+    groups: Sequence[tuple[str, dict[int, dict[str, Any]]]],
+    header: str,
+    badge: Any = None,
+    fig_height: float = 10,
+    colors: tuple[str, str] = ("blue", "cornflowerblue"),
+    text_colors: tuple[str, str] = ("white", "black"),
+    show: bool = True,
 ):
-    pitch = VerticalPitch(
-        pitch_type="wyscout",
-        line_zorder=2,
-        pitch_color='#aabb97',stripe_color='#c2d59d', stripe=True,
-        linewidth=1,
-        line_color="white",
-        pad_top=20,
-    )
+    """Shirt numbers at each player's mean position; starters in the first colour.
 
-    GRID_HEIGHT = 0.8
-    CBAR_WIDTH = 0.03
+    groups is a list of (title, positions) where positions is
+    {player_id: {"x", "y", "shirt", "start"}} as wyscout.data.match.average_positions returns.
+    """
+    pitch = make_pitch(grass=True, pad_top=20)
+    fig, axs = pitch_grid(pitch, ncols=len(groups), fig_height=fig_height, title_height=0.01,
+                          title_space=0.04, endnote_height=0.08)
 
-    title_font_size = fig_height * 3.5
-    match_font_size = fig_height * 2
-    footer_font_size = fig_height * 1.3
-    img_size = fig_height * 1.5
-
-    pitches = 2 if filter_fn else 1
-
-    fig, axs = pitch.grid(
-        nrows=1,
-        ncols=pitches,
-        figheight=fig_height,
-        # leaves some space on the right hand side for the colorbar
-        grid_width=0.88,
-        left=0.025,
-        endnote_height=0.08,
-        endnote_space=0,
-        # Turn off the endnote/title axis. I usually do this after
-        # I am happy with the chart layout and text placement
-        axis=False,
-        title_space=0.04,
-        title_height=0.01,
-        grid_height=GRID_HEIGHT,
-    )
-
-    match, match_details, squad, team_details = get_match_details_and_events(
-        team_id, match_id, True
-    )
-
-    fmt_str = "{opposition} ({venue}), {match_date_formatted}, {result} {score}"
-    header_text = format_match_details(match_details, team_id, fmt_str)
-
-    periods = ["1H", "2H"]
-    filter_fns = [filter_fn, lambda x: not filter_fn(x)]
-    for i in range(pitches):
-        period = periods[i] if not filter_fn else None
-        ax = axs["pitch"][i] if filter_fn else axs["pitch"]
-        _, positions = get_average_positions(
-            team_id, match_id, period, filter_fn=filter_fns[i]
-        )
-
+    for (title, positions), ax in zip(groups, pitch_axes(axs)):
         for pos in positions.values():
-            pitch.scatter(
-                pos["ave_location"]["x"],
-                pos["ave_location"]["y"],
-                s=400,
-                label="test",
-                color=colors[0] if pos["start"] else colors[1],
-                edgecolors=["black"],
-                linewidth=0.5,
-                marker="o",
-                zorder=3,
-                ax=ax,
-            )
-
-            h_offset = fig_height / 13
-            v_offset = fig_height * -0.02
+            started = pos["start"]
+            pitch.scatter(pos["x"], pos["y"], s=400, color=colors[0] if started else colors[1],
+                          edgecolors=["black"], linewidth=0.5, marker="o", zorder=3, ax=ax)
             pitch.annotate(
                 pos["shirt"],
-                xy=(
-                    pos["ave_location"]["x"] - h_offset,
-                    pos["ave_location"]["y"] - v_offset,
-                ),
-                xytext=(
-                    pos["ave_location"]["x"] - h_offset,
-                    pos["ave_location"]["y"] - v_offset,
-                ),
+                xy=(pos["x"] - fig_height / 13, pos["y"] + fig_height * 0.02),
                 fontsize=fig_height,
-                color=text_colors[0] if pos["start"] else text_colors[1],
+                color=text_colors[0] if started else text_colors[1],
                 ha="center",
                 weight="bold",
                 zorder=3,
                 ax=ax,
             )
+        panel_title(ax, title, fig_height * 2, y=104)
 
-        title = subtitle[0] if i == 0 else subtitle[1]
-        ax.text(50, 104, title, ha="center", va="center", fontsize=match_font_size)
-
-    team = team_details[team_id]
-    team_logo = Image.open(urlopen(team["imageDataURL"]))
-    add_header(
-        fig,
-        axs["title"],
-        header_text,
-        subtitle_start_pos=-0.5,
-        scale_img=img_size,
-        font_size=title_font_size,
-        title_va="center",
-        title_pos=(0, 7),
-        imgs=[team_logo],
-        img_rel_x_pos=0.11,
-        img_rel_y_pos=0.03,
-    )
-
-    # add_footer(
-    #     fig, axs["endnote"], scale_img=fig_height / 10, font_size=footer_font_size
-    # )
+    add_header(fig, axs["title"], header, subtitle_start_pos=-0.5, scale_img=fig_height * 1.5,
+               font_size=fig_height * (3.5 if len(groups) > 1 else 2.2), title_va="center", title_pos=(0, 7),
+               imgs=[badge] if badge else None, img_rel_x_pos=0.11, img_rel_y_pos=0.03)
+    if show:
+        plt.show()
+    return fig, axs, pitch
 
 
-def plot_last_third_passes(
-    team_id: int,
-    match_id: int,
-    fig_height=20,
-    pass_colors=("blue", "cornflowerblue"),
-    subtitle=["Passes in final third"],
-    cmap="Blues",
+# ── final third passes ───────────────────────────────────────────────────────
+
+
+def plot_final_third_passes(
+    touches: Sequence[Sequence[float]],
+    arrows: Sequence[Arrow],
+    header: str,
+    subtitle: Sequence[str] | None = None,
+    badge: Any = None,
+    fig_height: float = 10,
+    cmap: str = "Blues",
+    show: bool = True,
 ):
-    pitch = VerticalPitch(
-        pitch_type="wyscout",
-        line_zorder=2,
-        half=True,
-        linewidth=1,
-        line_color="black",
-        pad_top=5,
-    )
+    """Pass arrows over a touch heat map on the attacking half."""
+    pitch = make_pitch(half=True, pad_top=5, pad_bottom=0)
+    fig, axs = pitch_grid(pitch, fig_height=fig_height, title_height=0.025, title_space=0.02,
+                          endnote_height=0.07)
+    add_heat_map(touches, pitch, axs["pitch"], levels=50, cmap=cmap)
+    plot_arrows(arrows, pitch, axs["pitch"])
+    add_header(fig, axs["title"], header, subtitle=subtitle, subtitle_font_size=fig_height * 2.5,
+               subtitle_start_pos=-0.7, scale_img=5, font_size=fig_height * 3, title_va="center",
+               title_pos=(0, 1.3), imgs=[badge] if badge else None, img_rel_x_pos=0.11, img_rel_y_pos=0.03)
+    add_footer(fig, axs["endnote"], scale_img=1, font_size=fig_height * 1.3)
+    if show:
+        plt.show()
+    return fig, axs, pitch
 
-    GRID_HEIGHT = 0.8
-    CBAR_WIDTH = 0.03
-    fig, axs = pitch.grid(
-        nrows=1,
-        ncols=1,
-        figheight=fig_height,
-        # leaves some space on the right hand side for the colorbar
-        grid_width=0.88,
-        left=0.025,
-        endnote_height=0.07,
-        endnote_space=0,
-        # Turn off the endnote/title axis. I usually do this after
-        # I am happy with the chart layout and text placement
-        axis=False,
-        title_space=0.02,
-        title_height=0.025,
-        grid_height=GRID_HEIGHT,
-    )
 
-    match_font_size = fig_height * 2
-    title_font_size = fig_height * 3
-    subtitle_font_size = fig_height * 2.5
-    footer_font_size = fig_height * 1.3
+# ── xG race ──────────────────────────────────────────────────────────────────
 
-    match, match_details, squad, team_details = get_match_details_and_events(
-        team_id, match_id, True
-    )
 
-    fmt_str = "{opposition} ({venue}), {match_date_formatted}, {result} {score}"
-    header_text = format_match_details(match_details, team_id, fmt_str)
+def plot_xg_race(
+    shots: Sequence[Event],
+    teams: Sequence[tuple[int, str]],
+    colours: Sequence[str] = ("blue", "green"),
+    ax: plt.Axes | None = None,
+    title: str | None = None,
+    show: bool = True,
+) -> plt.Axes:
+    """Cumulative xG for each team through the match, stepping up at every attempt.
 
-    ax = axs["pitch"]
-    passes = []
-    touches = []
-    for e in match["events"]:
-        if e["team"]["id"] != team_id:
+    teams is [(team_id, name), ...] in the order the colours apply.
+    """
+    if ax is None:
+        _, ax = plt.subplots(figsize=(14, 6))
+
+    steps: dict[int, list[tuple[float, float]]] = defaultdict(lambda: [(0, 0)])
+    totals: dict[int, float] = defaultdict(float)
+    for e in sorted(shots, key=lambda s: (s["matchPeriod"], s["minute"], s["second"])):
+        if not e.get("shot"):
             continue
-        if "location" in e and e["location"]:
-            touches.append([e["location"]["x"], e["location"]["y"]])
+        minute = e["minute"] + e["second"] / 60
+        if e["matchPeriod"] == "1H":
+            minute = min(minute, 45)
+        elif e["matchPeriod"] == "2H":
+            minute = min(minute, 90)
+        totals[e["team"]["id"]] += e["shot"]["xg"]
+        steps[e["team"]["id"]].append((minute, totals[e["team"]["id"]]))
 
-        if e["type"]["primary"] == "pass":
-            if e["location"]["x"] > 66:
-                color = pass_colors[0] if e["pass"]["accurate"] else pass_colors[1]
-                passes.append(
-                    pass_event_to_arrow(
-                        e,
-                        [],
-                        ArrowOptions(color=color, width=2, highlight=is_goal_pass),
-                    )
-                )
-    add_heat_map(touches, pitch, ax, levels=50, cmap=cmap)
-    plot_arrows(passes, pitch, ax)
+    for (team_id, _), colour in zip(teams, colours):
+        points = steps[team_id] + [(90, totals[team_id])]
+        xs = [p[0] for p in points]
+        ys = [p[1] for p in points]
+        ax.step(xs, ys, where="post", color=colour, linewidth=2)
+        ax.annotate(f"{totals[team_id]:.2f}", xy=(90, totals[team_id]), xytext=(4, 0),
+                    textcoords="offset points", color=colour, va="center", fontweight="bold")
 
-    team = team_details[team_id]
-    team_logo = Image.open(urlopen(team["imageDataURL"]))
-    add_header(
-        fig,
-        axs["title"],
-        header_text,
-        subtitle=subtitle,
-        subtitle_font_size=subtitle_font_size,
-        subtitle_start_pos=-0.7,
-        scale_img=5,
-        font_size=title_font_size,
-        title_va="center",
-        title_pos=(0, 1.3),
-        imgs=[team_logo],
-        img_rel_x_pos=0.11,
-        img_rel_y_pos=0.03,
+    ax.set_xlim(0, 95)
+    ax.set_xticks([0, 15, 30, 45, 60, 75, 90])
+    ax.set_xlabel("Minute")
+    ax.set_ylabel("Cumulative xG")
+    ax.yaxis.grid(True, alpha=0.4)
+    for spine in ("top", "right"):
+        ax.spines[spine].set_visible(False)
+    ax.legend(
+        [Line2D([0], [0], color=c, lw=2) for _, c in zip(teams, colours)],
+        [name for _, name in teams],
+        loc="upper left",
+        frameon=False,
     )
-
-    add_footer(fig, axs["endnote"], scale_img=1, font_size=footer_font_size)
-
-    plt.show()
-
-
-
-def plot_average_positions_from_tracking(
-    team_id: int,
-    match_id: int,
-    fig_height=10,
-    colors=["blue", "cornflowerblue"],
-    text_colors=["white", "black"],
-    subtitle=["1st Half", "2nd Half"],
-    filter_fn: Optional[callable] = None,
-):
-    pitch = VerticalPitch(
-        pitch_type="wyscout",
-        line_zorder=2,
-        pitch_color='#aabb97',stripe_color='#c2d59d', stripe=True,
-        linewidth=1,
-        line_color="white",
-        pad_top=20,
-    )
-
-    GRID_HEIGHT = 0.8
-    CBAR_WIDTH = 0.03
-
-    title_font_size = fig_height * 3.5
-    match_font_size = fig_height * 2
-    footer_font_size = fig_height * 1.3
-    img_size = fig_height * 1.5
-
-    pitches = 2 if filter_fn else 1
-
-    fig, axs = pitch.grid(
-        nrows=1,
-        ncols=pitches,
-        figheight=fig_height,
-        # leaves some space on the right hand side for the colorbar
-        grid_width=0.88,
-        left=0.025,
-        endnote_height=0.08,
-        endnote_space=0,
-        # Turn off the endnote/title axis. I usually do this after
-        # I am happy with the chart layout and text placement
-        axis=False,
-        title_space=0.04,
-        title_height=0.01,
-        grid_height=GRID_HEIGHT,
-    )
-
-    match, match_details, squad, team_details = get_match_details_and_events(
-        team_id, match_id, True
-    )
-
-    fmt_str = "{opposition} ({venue}), {match_date_formatted}, {result} {score}"
-    header_text = format_match_details(match_details, team_id, fmt_str)
-
-    periods = ["1H", "2H"]
-    filter_fns = [filter_fn, lambda x: not filter_fn(x)]
-    for i in range(pitches):
-        period = periods[i] if not filter_fn else None
-        ax = axs["pitch"][i] if filter_fn else axs["pitch"]
-        _, positions = get_average_positions(
-            team_id, match_id, period, filter_fn=filter_fns[i]
-        )
-
-        for pos in positions.values():
-            pitch.scatter(
-                pos["ave_location"]["x"],
-                pos["ave_location"]["y"],
-                s=400,
-                label="test",
-                color=colors[0] if pos["start"] else colors[1],
-                edgecolors=["black"],
-                linewidth=0.5,
-                marker="o",
-                zorder=3,
-                ax=ax,
-            )
-
-            h_offset = fig_height / 13
-            v_offset = fig_height * -0.02
-            pitch.annotate(
-                pos["shirt"],
-                xy=(
-                    pos["ave_location"]["x"] - h_offset,
-                    pos["ave_location"]["y"] - v_offset,
-                ),
-                xytext=(
-                    pos["ave_location"]["x"] - h_offset,
-                    pos["ave_location"]["y"] - v_offset,
-                ),
-                fontsize=fig_height,
-                color=text_colors[0] if pos["start"] else text_colors[1],
-                ha="center",
-                weight="bold",
-                zorder=3,
-                ax=ax,
-            )
-
-        title = subtitle[0] if i == 0 else subtitle[1]
-        ax.text(50, 104, title, ha="center", va="center", fontsize=match_font_size)
-
-    team = team_details[team_id]
-    team_logo = Image.open(urlopen(team["imageDataURL"]))
-    add_header(
-        fig,
-        axs["title"],
-        header_text,
-        subtitle_start_pos=-0.5,
-        scale_img=img_size,
-        font_size=title_font_size,
-        title_va="center",
-        title_pos=(0, 7),
-        imgs=[team_logo],
-        img_rel_x_pos=0.11,
-        img_rel_y_pos=0.03,
-    )
+    if title:
+        ax.set_title(title, fontproperties=APP_FONT.prop, fontsize=14, loc="left")
+    if show:
+        plt.show()
+    return ax

@@ -12,3 +12,4 @@ imgs
 .pytest_cache
 .ipynb_checkpoints
 output
+tracking_data

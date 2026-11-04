@@ -1,13 +1,13 @@
 
 from collections import Counter
-from typing import Any, Dict, List
+from typing import Any
 
 from wyscout.competitions import get_competition_teams, get_season_matches
 from wyscout.match import get_match_details
 from wyscout.team import get_team_details
 
 
-def add_match_to_table(table: Dict[int, Dict[str, int]], m: Dict[str, Any]) -> None:
+def add_match_to_table(table: dict[int, dict[str, int]], m: dict[str, Any]) -> None:
     """Fold one match's result into a running table, keyed by team id."""
     if m["status"] != "Played":
         return
@@ -63,7 +63,7 @@ def add_match_to_table(table: Dict[int, Dict[str, int]], m: Dict[str, Any]) -> N
     table[teams[1]]["goal_difference"] = table[teams[1]]["goals_for"] - table[teams[1]]["goals_against"]
 
 
-def sort_table(table: Dict[int, Dict[str, int]]) -> List[Any]:
+def sort_table(table: dict[int, dict[str, int]]) -> list[Any]:
     """Points, then goal difference, then goals scored - the National League order."""
     return sorted(
         table.items(),
@@ -72,14 +72,14 @@ def sort_table(table: Dict[int, Dict[str, int]]) -> List[Any]:
     )
 
 
-def league_table(matches: List[Dict[str, Any]]) -> Dict[str, Any]:
+def league_table(matches: list[dict[str, Any]]) -> dict[str, Any]:
     table = {}
     for m in matches:
         add_match_to_table(table, m)
 
     return sort_table(table)
 
-def league_table_at_date(season_id: int, competition_id: int, end_date: str, start_date: str = None) -> List[Dict[str, Any]]:
+def league_table_at_date(season_id: int, competition_id: int, end_date: str, start_date: str | None = None) -> list[dict[str, Any]]:
     matches = get_season_matches(season_id)
     teams = get_competition_teams(competition_id)
     team_map = { t["wyId"]: t["name"] for t in teams["teams"] }
@@ -115,7 +115,7 @@ def league_table_at_date(season_id: int, competition_id: int, end_date: str, sta
         }
     return table
 
-def league_match_details(season_id: int) -> List[Dict[str, Any]]:
+def league_match_details(season_id: int) -> list[dict[str, Any]]:
     """Played league matches for a season, oldest first, with play-offs dropped.
 
     Play-offs sit in their own round, so the league round is taken to be the
@@ -142,7 +142,7 @@ def league_match_details(season_id: int) -> List[Dict[str, Any]]:
 
 def table_progression(
     season_id: int, competition_id: int, team_id: int
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """How a team stood after each of its match days, and how far off the top.
 
     One row per match the team played, in date order. The table behind each row
@@ -164,7 +164,7 @@ def table_progression(
     ]
 
     rows = []
-    running: Dict[int, Dict[str, int]] = {}
+    running: dict[int, dict[str, int]] = {}
     applied = 0
 
     for game, m in enumerate(our_matches, start=1):

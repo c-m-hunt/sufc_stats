@@ -2,7 +2,6 @@ import hashlib
 import json
 import os
 from os.path import exists
-from typing import Dict
 
 CACHE_BASE = os.getcwd()
 
@@ -13,7 +12,7 @@ def set_cache_base(cache_base: str):
 
 
 def cache_request(func):
-    def wrapped(url: str, params: Dict[str, str]):
+    def wrapped(url: str, params: dict[str, str]):
         cache_key = get_cache_key(url, params)
         data = get_cache(cache_key)
         if data is None:
@@ -27,7 +26,7 @@ def cache_request(func):
 def get_cache(cache_key: str) -> any:
     file_name = get_cache_file_name(cache_key)
     if exists(file_name):
-        f = open(file_name, "r")
+        f = open(file_name)
         data = f.read()
         f.close()
         return json.loads(data)
@@ -39,7 +38,7 @@ def set_cache(cache_key: str, data: any):
     f.close()
 
 
-def get_cache_key(url: str, params: Dict[str, str]) -> str:
+def get_cache_key(url: str, params: dict[str, str]) -> str:
     key = f"{url}-{json.dumps(params)}"
     return hashlib.md5(key.encode()).hexdigest()
 

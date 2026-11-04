@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from wyscout.api.api import get_request
 from wyscout.api.mongo_cache import cache_request
@@ -44,6 +44,18 @@ def get_match_advanced_stats(match_id: int) -> any:
     params = {}
     return get_request(url, params)
 
+# not cached: the download link it returns is signed and expires within a day
+def get_match_tracking_url(match_id: int) -> any:
+    url = f"matches/{match_id}/fulltracking"
+    params = {}
+    return get_request(url, params)
+
+@cache_request("matchPhysicalData", expires_hr=10000)
+def get_match_physical_data(match_id: int) -> any:
+    url = f"matches/{match_id}/physicaldata"
+    params = {}
+    return get_request(url, params)
+
 def get_match_details_and_events(team_id: int, match_id: int, all_events: bool = False):
     match_details = get_match_details(match_id)
     season_id = match_details["seasonId"]
@@ -67,7 +79,7 @@ def get_match_details_and_events(team_id: int, match_id: int, all_events: bool =
 
 
 def get_match_events_for_season(
-    team_id: int, season_id: int, match_id: int = None, all_events=False
+    team_id: int, season_id: int, match_id: int | None = None, all_events=False
 ):
     matches = get_team_matches(team_id, season_id)
     events_out = []
@@ -85,8 +97,8 @@ def get_match_events_for_season(
 
 
 def get_events_with_match(
-    match: Dict[str, Any], events: List[Dict[str, Any]], team_id: Optional[str]
-) -> List[Dict[str, Any]]:
+    match: dict[str, Any], events: list[dict[str, Any]], team_id: str | None
+) -> list[dict[str, Any]]:
     events_out = []
     for event in events:
         if not team_id or event["team"]["id"] == team_id:
@@ -97,3 +109,20 @@ def get_events_with_match(
         "opposition": events[0]["opponentTeam"]["name"],
         "events": events_out,
     }
+
+
+@cache_request("videos", expires_hr=10000)
+def get_video_for_event(event: Any, padding: int = 5, length: int = 5, quality: str = "hd") -> Any:
+    """A clip URL around one event, from padding seconds before it to length after."""
+    url = f"videos/{event['matchId']}"
+    params = {
+        "start": int(float(event["videoTimestamp"]) - padding),
+        "end": int(float(event["videoTimestamp"]) + length),
+        "quality": quality,
+    }
+    return get_request(url, params)
+
+
+@cache_request("referees", expires_hr=10000)
+def get_referee(referee_id: int) -> any:
+    return get_request(f"referees/{referee_id}", {})

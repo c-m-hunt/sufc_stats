@@ -2,7 +2,6 @@ import datetime
 import hashlib
 import json
 import os
-from typing import Dict
 
 from pymongo import MongoClient
 
@@ -44,11 +43,23 @@ def set_cache(collection: str, cache_key: str, data: any, expires_hr: int):
         upsert=True,
     )
 
+def is_error_response(data: any) -> bool:
+    # an error, or the bare {"message": ...} the API sends back instead of data
+    return isinstance(data, dict) and ("error" in data or set(data) == {"message"})
+
+
 def delete_cache(collection: str, cache_key: str):
     db[collection].delete_one({"key": cache_key})
 
-def get_cache_key(args: Dict) -> str:
-    key = json.dumps(args)
+def _plain(value):
+    # numpy scalars (e.g. an id pulled out of a DataFrame) are not JSON serialisable
+    if hasattr(value, "item"):
+        return value.item()
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
+def get_cache_key(args: dict) -> str:
+    key = json.dumps(args, default=_plain)
     return hashlib.md5(key.encode()).hexdigest()
 
 
@@ -62,9 +73,11 @@ def cache_request(collection: str, expires_hr: int = 72, force: bool = False):
                 delete_cache(collection, cache_key)
             try:
                 data = get_cache(collection, cache_key)
-                if data is None:
+                if data is None or is_error_response(data):
                     data = func(*args, **kwargs)
-                    set_cache(collection, cache_key, data, expires_hr)
+                    # an error (e.g. stats not published yet) must not be remembered
+                    if not is_error_response(data):
+                        set_cache(collection, cache_key, data, expires_hr)
                 return data
             except Exception as e:
                 print(f"Error in cache_request: {e}")

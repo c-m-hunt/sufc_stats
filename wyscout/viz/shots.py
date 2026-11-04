@@ -1,172 +1,92 @@
-import math
-from typing import List
+"""Attempts on goal drawn as circles sized by xG."""
+
+from collections.abc import Sequence
+from typing import Any
 
 import matplotlib.pyplot as plt
 from mplsoccer import VerticalPitch
 
-from wyscout.viz.consts import APP_FONT, COLOUR_1, COLOUR_3
+from wyscout.viz.consts import APP_FONT, COLOUR_1, COLOUR_3, TEAM_COLOURS
+from wyscout.viz.pitch import make_pitch, pitch_grid
 from wyscout.viz.utils import add_footer
 
-
-def plot_shots_compare(
-    match_events: any,
-    last_x_games: int = None,
-    first_x_games: int = None,
-    include_pens: bool = False,
-    colors: list = ["red", "blue"],
-    style: str = "fivethirtyeight",
-):
-    if last_x_games and not first_x_games:
-        first_x_games = len(match_events) - last_x_games
-
-    if first_x_games and not last_x_games:
-        last_x_games = len(match_events) - first_x_games
-
-    if not first_x_games and not last_x_games:
-        first_x_games = math.floor(len(match_events) / 2)
-        last_x_games = len(match_events) - first_x_games
-
-    title = (
-        f"Attempts on goal - first {first_x_games} games vs last {last_x_games} games"
-    )
-    event_types = ["shot"]
-    if include_pens:
-        event_types.append("penalty")
-
-    def get_events(match_events):
-        all_events = []
-        for j, match in enumerate(match_events[:8]):
-            all_events.extend(
-                [e for e in match["events"] if e["type"]["primary"] in event_types]
-            )
-        return all_events
-
-    events = [
-        get_events(match_events[-1 * first_x_games :]),
-        get_events(match_events[:last_x_games]),
-    ]
-
-    plot_dual_shot_map(events, title, colors, style)
+Event = dict[str, Any]
+Colours = str | tuple[str, str]
 
 
-def plot_dual_shot_map(
-    shots: List[any],
-    title: str,
-    colors: list = ["red", "blue"],
-    style: str = "fivethirtyeight",
-):
-    pitch = VerticalPitch(
-        pitch_type="wyscout",
-        half=True,
-        goal_type="box",
-        pad_bottom=-20,
-        pitch_color="grass",
-        line_color="white",
-        stripe=True,
-    )
-    fig, axs = pitch.grid(
-        figheight=15,
-        ncols=2,
-        title_height=0.1,
-        title_space=0.02,
-        axis=False,
-    )
+def plot_shots(
+    shots: Sequence[Event],
+    colors: Colours,
+    pitch: VerticalPitch,
+    ax: plt.Axes,
+    reverse: bool = False,
+    base_size: float = 1000,
+    line_width: float = 1.5,
+    goal_edge: str = "red",
+    edge: str = "black",
+    colour_by: str = "on_target",
+) -> None:
+    """One circle per attempt, area proportional to xG, ringed in goal_edge for goals.
 
-    plt.style.use(style)
-
-    font = APP_FONT
-
-    if len(shots) != 2:
-        raise ValueError("Must have two sets of shots to plot")
-
-    axs["title"].text(
-        0.5,
-        0.5,
-        title,
-        va="center",
-        ha="center",
-        color="black",
-        fontproperties=font.prop,
-        fontsize=50,
-    )
-
-    for i, shot_coll in enumerate(shots):
-        for event in shot_coll:
-            size = event["shot"]["xg"] * 2000
-            color = colors[0] if event["shot"]["isGoal"] is True else colors[1]
-            pitch.scatter(
-                event["location"]["x"],
-                event["location"]["y"],
-                s=size,
-                label=event["player"]["name"],
-                color=color,
-                edgecolors=["black"],
-                marker="o",
-                ax=axs["pitch"][i],
-            )
-
-    add_footer(fig, axs["endnote"], font_size=24, scale_img=1)
-
-    plt.show()
-
-
-def plot_shots(shots, color, pitch, ax, reverse=False, base_size=1000, line_width=1.5):
-    if type(color) is not tuple:
-        color = (color, color)
+    colors is (on target, off target) - or with colour_by="goal", (goal, no goal).
+    A single colour is used for everything. reverse=True flips the attempts to
+    the other end, for plotting the opposition's shots on the same pitch.
+    """
+    if not isinstance(colors, tuple):
+        colors = (colors, colors)
 
     for shot in shots:
+        x, y = shot["location"]["x"], shot["location"]["y"]
         if reverse:
-            shot["location"]["x"] = 100 - shot["location"]["x"]
-            shot["location"]["y"] = 100 - shot["location"]["y"]
-
-        size = shot["shot"]["xg"] * base_size
-        edge_color = "red" if shot["shot"]["isGoal"] is True else "black"
+            x, y = 100 - x, 100 - y
+        is_goal = shot["shot"]["isGoal"] is True
+        hit = shot["shot"]["onTarget"] is True if colour_by == "on_target" else is_goal
         pitch.scatter(
-            shot["location"]["x"],
-            shot["location"]["y"],
-            s=size,
+            x,
+            y,
+            s=shot["shot"]["xg"] * base_size,
             label=shot["player"]["name"],
-            color=color[0] if shot["shot"]["onTarget"] is True else color[1],
-            edgecolors=[edge_color],
+            color=colors[0] if hit else colors[1],
+            edgecolors=[goal_edge if is_goal else edge],
             linewidth=line_width,
             marker="o",
             ax=ax,
         )
 
 
-def plot_chances(
-    chances: any,
+def plot_shot_map(
+    shots: Sequence[Event],
     title: str,
-    include_pens: bool = False,
-    colors: List[str] = None,
-    style: str = "fivethirtyeight",
+    colors: tuple[str, str] | None = None,
+    fig_height: float = 8,
+    base_size: float = 1000,
+    show: bool = True,
 ):
-    if not colors:
-        colors = [COLOUR_3, COLOUR_1]
+    """A single striped half pitch of attempts, coloured (on target, off target)."""
+    return plot_shot_maps([shots], title, colors, fig_height, base_size, show)
 
-    pitch = VerticalPitch(
-        pitch_type="wyscout",
-        half=True,
-        goal_type="box",
-        pad_bottom=-20,
-        pitch_color="grass",
-        line_color="white",
-        stripe=True,
-    )
 
-    fig, axs = pitch.grid(
-        figheight=8,
-        endnote_height=0.08,
+def plot_shot_maps(
+    shot_groups: Sequence[Sequence[Event]],
+    title: str,
+    colors: tuple[str, str] | None = None,
+    fig_height: float = 8,
+    base_size: float = 1000,
+    show: bool = True,
+    panel_titles: Sequence[str] | None = None,
+):
+    """Side-by-side striped half pitches, one per group of attempts."""
+    colors = colors or (COLOUR_3, COLOUR_1)
+    pitch = make_pitch(half=True, grass=True, goal_type="box", pad_bottom=-20, pad_top=8)
+    fig, axs = pitch_grid(
+        pitch,
+        ncols=len(shot_groups),
+        fig_height=fig_height,
         title_height=0.1,
         title_space=0.02,
-        axis=False,
+        endnote_height=0.06,
         grid_height=0.78,
     )
-
-    plt.style.use(style)
-
-    robotto_regular = APP_FONT
-
     axs["title"].text(
         0.5,
         0.5,
@@ -174,18 +94,22 @@ def plot_chances(
         va="center",
         ha="center",
         color="black",
-        fontproperties=robotto_regular.prop,
-        fontsize=30,
+        fontproperties=APP_FONT.prop,
+        fontsize=fig_height * 3,
     )
 
-    event_types = ["shot"]
-    if include_pens:
-        event_types.append("penalty")
+    pitches = [axs["pitch"]] if len(shot_groups) == 1 else list(axs["pitch"])
+    for i, (shots, ax) in enumerate(zip(shot_groups, pitches)):
+        plot_shots(shots, colors, pitch, ax, base_size=base_size)
+        if panel_titles:
+            ax.text(50, 103, panel_titles[i], ha="center", va="center", fontsize=fig_height * 1.6,
+                    fontproperties=APP_FONT.prop)
 
-    shots = [e for e in chances if e["type"]["primary"] in event_types]
+    add_footer(fig, axs["endnote"], font_size=fig_height * 1.5, scale_img=1)
 
-    plot_shots(shots, tuple(colors), pitch, axs["pitch"])
+    if show:
+        plt.show()
+    return fig, axs, pitch
 
-    add_footer(fig, axs["endnote"], font_size=14, scale_img=1)
 
-    plt.show()
+DEFAULT_TEAM_COLOURS = TEAM_COLOURS

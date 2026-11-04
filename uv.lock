@@ -1484,7 +1484,7 @@ wheels = [
 [[package]]
 name = "sufc-stats"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "imageio" },
     { name = "jinja2" },
@@ -1492,9 +1492,11 @@ dependencies = [
     { name = "mplsoccer" },
     { name = "nbclient" },
     { name = "numpy" },
+    { name = "pandas" },
     { name = "pymongo" },
     { name = "python-dotenv" },
     { name = "requests" },
+    { name = "seaborn" },
 ]
 
 [package.dev-dependencies]
@@ -1511,9 +1513,11 @@ requires-dist = [
     { name = "mplsoccer", specifier = ">=1.4.0" },
     { name = "nbclient", specifier = ">=0.10.4" },
     { name = "numpy", specifier = ">=2.2.4" },
+    { name = "pandas", specifier = ">=2.2" },
     { name = "pymongo", specifier = ">=4.11.3" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "requests", specifier = ">=2.32.3" },
+    { name = "seaborn", specifier = ">=0.13" },
 ]
 
 [package.metadata.requires-dev]
